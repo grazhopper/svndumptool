@@ -43,8 +43,17 @@ class SvnDumpDiffCallback:
         self.path = ""
         self.index1 = -1
         self.index2 = -1
+        self.__ignores = {}
         self.__rev_printed = False
         self.__node_printed = False
+
+    def add_ignore( self, type ):
+        """Adds an ignore."""
+        self.__ignores[type] = None
+
+    def had_diffs( self ):
+        """Returns True when diffs were found."""
+        return self.diffs
 
     def comparing( self, filename1, filename2 ):
         """Called at the beginning."""
@@ -101,6 +110,8 @@ class SvnDumpDiffCallback:
     def rev_diff( self, type, value1, value2 ):
         """Called when a difference has been found."""
 
+        if self.__ignores.has_key( type ):
+            return
         self.diffs = True
         if self.verbosity > 0:
             self.__print_rev()
@@ -111,6 +122,8 @@ class SvnDumpDiffCallback:
     def node_diff( self, type, value1, value2 ):
         """Called when a difference has been found."""
 
+        if self.__ignores.has_key( type ):
+            return
         self.diffs = True
         if self.verbosity > 0:
             self.__print_node()
@@ -121,6 +134,8 @@ class SvnDumpDiffCallback:
     def node_missing( self, dumpnr, node ):
         """Called when a node exists in one dump only."""
 
+        if self.__ignores.has_key( "NodeMissing" ):
+            return
         self.diffs = True
         if self.verbosity > 0:
             self.__print_rev()
@@ -131,6 +146,8 @@ class SvnDumpDiffCallback:
     def wrong_md5( self, dumpnr, should, calc ):
         """Called when text has worng MD5."""
 
+        if self.__ignores.has_key( "WrongMD5" ):
+            return
         self.diffs = True
         if self.verbosity > 0:
             self.__print_node()
@@ -141,6 +158,8 @@ class SvnDumpDiffCallback:
     def text_diff( self, type ):
         """Called when text differs."""
 
+        if self.__ignores.has_key( type ):
+            return
         self.diffs = True
         if self.verbosity > 0:
             self.__print_node()
@@ -378,15 +397,32 @@ def svndump_diff_cmdline( appname, args ):
     parser.add_option( "-v", "--verbose",
                        action="store_const", dest="verbose", const=2,
                        help="verbose output" )
+    ignores = [ "UUID", "RevNr", "RevDate", "RevDateStr", "NodeCount",
+                "Path", "Action", "Kind", "CopyFromPath", "CopyFromRev",
+                "HasText", "TextLen", "TextMD5", "EOL", "Text" ]
+    ignore_help = "'" + ignores[0] + "'"
+    for i in ignores[1:-1]:
+        ignore_help = ignore_help + ", '" + i + "'"
+    ignore_help = ignore_help + " and '" + ignores[-1] + "'"
+    ignore_help = "Ignore types of differences. This option can be " + \
+                  "specified more than once. Valid types are " + ignore_help
+    parser.add_option( "-I", "--ignore",
+                       action="append", dest="ignores",
+                       type="choice", choices=ignores,
+                       help=ignore_help )
+
 
     (options, args) = parser.parse_args( args )
 
     if len(args) != 2:
         print "please specify exactly two dump files."
         return 1
-
     diff = SvnDumpDiff( args[0], args[1] )
     callback = SvnDumpDiffCallback( options.verbose )
+
+    if options.ignores != None:
+        for i in options.ignores:
+            callback.add_ignore( i )
 
     #diff.set_input_file( args[0] )
     #if len( args ) == 2:
@@ -397,4 +433,7 @@ def svndump_diff_cmdline( appname, args ):
     #    diff.set_mode_regexp( options.regexp )
 
     diff.execute( callback )
-    return 0
+    if callback.had_diffs():
+        return 1
+    else:
+        return 0
