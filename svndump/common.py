@@ -53,7 +53,7 @@ class SvnDumpException( Exception ):
 
 
 # OrderedDict: a class stolen from Innoconda
-# http://twistedmatrix.com/~moonfallen/innoconda.html
+# http://innoconda.berlios.de/
 
 class OrderedDict( dict ):
     """A dict which you can access in order through items() or popitem().
