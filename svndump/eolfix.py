@@ -178,7 +178,8 @@ class SvnDumpEolFix:
                 outfile.write( "\n" )
                 outlen = outlen + 1
             outfile.close()
-            newnode = SvnDumpNode( node.get_kind(), node.get_path() )
+            newnode = SvnDumpNode( node.get_path(), node.get_action(),
+                                   node.get_kind() )
             newnode.set_action( node.get_action() )
             if node.has_copy_from():
                 newNode.set_copy_from( node.get_copy_from_path(),

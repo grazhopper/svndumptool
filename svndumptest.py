@@ -21,8 +21,8 @@
 #
 #===============================================================================
 
-import os
-import os.path
+from os import mkdir, system, listdir, remove, rmdir
+from os.path import isdir, isfile, abspath
 import zlib
 
 import svndump
@@ -31,20 +31,20 @@ from svndump.file import SvnDumpFile
 
 def run( cmd ):
     print "cmd <%s>" % cmd
-    rc = os.system( cmd )
+    rc = system( cmd )
     print "rc: %d" % rc
     return rc
 
 def kill_dir( dir ):
     """'rm -rf dir' in python ;-)"""
-    if os.path.isdir( dir ):
-        for d in os.listdir( dir ):
+    if isdir( dir ):
+        for d in listdir( dir ):
             d = dir + "/" + d
-            if os.path.isdir( d ):
+            if isdir( d ):
                 kill_dir( d )
             else:
-                os.remove( d )
-        os.rmdir( dir )
+                remove( d )
+        rmdir( dir )
 
 def create_text( type, fileid, revnr ):
     """Create some test text."""
@@ -53,7 +53,6 @@ def create_text( type, fileid, revnr ):
     filerevtxt = "file %s rev %d\n" % ( fileid, revnr )
     text = lines * 3 + filerevtxt + lines * 3
     if type == "binary":
-        print "gzip !?!?!"
         text = zlib.compress( text )
     elif type == "broken-eol":
         text = text.replace( "B\n", "B\r\n" )
@@ -81,7 +80,7 @@ def svn_create_dump_file( filename, fileid, data, reposdir, wcdir ):
         rev = data[irev]
         irev = irev + 1
         revnr = revnr + 1
-        if rev.has_key( "" ):
+        if rev.has_key( "author" ):
             author = rev["author"]
         else:
             author = "t%d" % revnr
@@ -102,24 +101,58 @@ def svn_create_dump_file( filename, fileid, data, reposdir, wcdir ):
             if action == "delete":
                 run( "svn rm '%s'" % nodefile )
             elif kind == "dir" and action == "add":
-                run( "svn mkdir '%s/%s'" % ( wcdir, path ) )
-            elif kind == "file" and nodedata.has_key( "text" ):
-                text = create_text( nodedata["text"], fileid, revnr )
-                fileobj = open( nodefile, "wb" )
-                fileobj.write( text )
-                fileobj.close()
-                if action == "add":
+                # replace is not handled for dirs, is this possible with svn?
+                if isdir( nodefile ):
+                    # allready there, probably copied with parent dir
+                    pass
+                elif nodedata.has_key( "copyfrom" ):
+                    # copy from repos
+                    copyfrom = nodedata["copyfrom"]
+                    fromurl = "file://%s/%s" % ( reposdir, copyfrom[0] )
+                    fromrev = copyfrom[1]
+                    run( "svn cp -r %d '%s' '%s'" %
+                            ( fromrev, fromurl, nodefile ) )
+                else:
+                    run( "svn mkdir '%s/%s'" % ( wcdir, path ) )
+            elif kind == "file":
+                add = False
+                if action == "replace":
+                    # replace = delet & add
+                    add = True
+                    run( "svn rm '%s'" % nodefile )
+                if action == "add" and not isfile( nodefile ):
+                    # action 'add' and file doesn't exist
+                    if nodedata.has_key( "copyfrom" ):
+                        # copy from repos
+                        copyfrom = nodedata["copyfrom"]
+                        fromurl = "file://%s/%s" % ( reposdir, copyfrom[0] )
+                        fromrev = copyfrom[1]
+                        run( "svn cp -r %d '%s' '%s'" %
+                                ( fromrev, fromurl, nodefile ) )
+                    else:
+                        # it's a normal add
+                        add = True
+                if nodedata.has_key( "text" ):
+                    # set/modify text
+                    text = create_text( nodedata["text"], fileid, revnr )
+                    fileobj = open( nodefile, "wb" )
+                    fileobj.write( text )
+                    fileobj.close()
+                if add:
                     run( "svn add '%s'" % nodefile )
             if nodedata.has_key( "props" ):
+                # for each property do a propset or propdel
                 props = nodedata["props"]
-                print props
                 for name, value in props.items():
                     if value == None:
                         run( "svn pd '%s' '%s'" % ( name, nodefile ) )
                     else:
                         run( "svn ps '%s' '%s' '%s'" % \
                                     ( name, value, nodefile ) )
+        # commit revision
         run( "svn ci --username '%s' -m '%s' '%s'" % ( author, log, wcdir ) )
+        # update wc
+        run( "svn up '%s'" % wcdir )
 
     # dump the repos
     run( "svnadmin dump '%s' > '%s'" % ( reposdir, filename ) )
@@ -161,14 +194,12 @@ def py_create_dump_file( filename, fileid, data, tmpdir ):
         nnode = len(nodes)
         inode = 0
         while inode < nnode:
-            # +++++ change handling of properties !!!
             nodedata = nodes[inode]
             inode = inode + 1
             action = nodedata["action"]
             kind = nodedata["kind"]
             path = nodedata["path"]
-            node = SvnDumpNode( kind, path )
-            node.set_action( action )
+            node = SvnDumpNode( path, action, kind )
             if nodedata.has_key( "copyfrom" ):
                 copyfrom = nodedata["copyfrom"]
                 node.set_copy_from( copyfrom[0], copyfrom[1] )
@@ -208,7 +239,7 @@ def py_create_dump_file( filename, fileid, data, tmpdir ):
 data_test1 = [
     {
         "nr":       0,
-        "uuid":     "70e73ab9-a1e8-0310-b250-e777cff18a12",
+        "uuid":     "11111111-1111-1111-1111-111111111111",
         "date":     "2004-01-01T10:00:00.000000Z"
     },
     {
@@ -348,6 +379,58 @@ data_test1 = [
                 }
             }
         ]
+    },
+    {
+        "date":     "2004-01-06T12:00:00.000000Z",
+        "nodes":    [
+            # replace a file
+            {
+                "path":     "testdir1/ok3.txt",
+                "kind":     "file",
+                "action":   "replace",
+                "text":     "text",
+                "props":    {
+                    "broken":       "false"
+                }
+            }
+        ]
+    },
+    {
+        "date":     "2004-01-07T12:00:00.000000Z",
+        "nodes":    [
+            # copy a file
+            {
+                "path":     "testdir2/ok1.txt",
+                "kind":     "file",
+                "action":   "add",
+                "copyfrom": [ "testdir1/ok1.txt", 2 ]
+            }
+        ]
+    },
+    {
+        "date":     "2004-01-08T12:00:00.000000Z",
+        "nodes":    [
+            # copy and modify a file
+            {
+                "path":     "testdir3/ok1.txt",
+                "kind":     "file",
+                "action":   "add",
+                "text":     "text",
+                "copyfrom": [ "testdir1/ok1.txt", 3 ]
+            }
+        ]
+    },
+    {
+        "date":     "2004-01-09T12:00:00.000000Z",
+        "nodes":    [
+            # copy a dir
+            {
+                "path":     "testdir2/subdir1",
+                "kind":     "dir",
+                "action":   "add",
+                "copyfrom": [ "testdir1", 8 ]
+            }
+        ]
     }
 ]
 
@@ -357,20 +440,24 @@ def write_test_file( tmpdir ):
     py_create_dump_file( filename, data, tmpdir )
 
 if __name__ == '__main__':
-    tempdir = os.path.abspath( "testtmp" )
+    # setup a few path variables
+    tempdir = abspath( "testtmp" )
     tempfiles = tempdir + "/files"
     temprepos = tempdir + "/repos"
     tempwc = tempdir + "/wc"
-    if not os.path.isdir( tempdir ):
-        os.mkdir( tempdir )
-    if not os.path.isdir( tempfiles ):
-        os.mkdir( tempfiles )
-    #write_test_file( tmpfiles )
+    # create needed directories
+    if not isdir( tempdir ):
+        mkdir( tempdir )
+    if not isdir( tempfiles ):
+        mkdir( tempfiles )
+
+    # test1: create a dump with commandline and python classes then compare
     svndmp = tempdir + "/testdump1svn"
     pydmp = tempdir + "/testdump1py"
-    #svn_create_dump_file( svndmp, "test1", data_test1, temprepos, tempwc )
+    # create with cmdline
+    svn_create_dump_file( svndmp, "test1", data_test1, temprepos, tempwc )
+    # create with python
     py_create_dump_file( pydmp, "test1", data_test1, tempfiles )
+    # copy the one created with cmdline
     svndump.copy_dump_file( svndmp, pydmp + "2" )
 
-# def svn_create_dump_file( filename, fileid, reposdir, wcdir, data ):
-#  def py_create_dump_file( filename, fileid, data, tmpdir ):

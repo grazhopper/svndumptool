@@ -29,20 +29,30 @@ from common import *
 class SvnDumpNode:
     """A node of a svn dump file."""
 
-    def __init__( self, kind, path ):
+    def __init__( self, path, action, kind ):
         """Init method.
 
+            - action: one of 'add', 'delete', 'change' or 'replace'
             - kind: kind of the node (file or dir)
             - path: path of the node"""
 
+        # check action
+        if action != "add" and action != "delete" and \
+           action != "change" and action != "replace":
+            raise SvnDumpException, "Unknown action '%s'." % action
         # check kind
-        if kind != "file" and kind != "dir":
-            raise SvnDumpException, "Unknown kind '%s'" % kind
+        if action == "delete":
+            if kind != "" and kind != "file" and kind != "dir":
+                raise SvnDumpException, "Unknown kind '%s'" % kind
+        else:
+            if kind != "file" and kind != "dir":
+                raise SvnDumpException, "Unknown kind '%s'" % kind
         # check path +++
+
         # path of this node relative to the repository root
         self.__path = path
         # action: 'add', 'change', 'delete' or 'replace'
-        self.__action = ""
+        self.__action = action
         # kind: 'file', 'dir' or 'node' if not known
         self.__kind = kind
         # list of properties name=>value pairs
@@ -122,18 +132,6 @@ class SvnDumpNode:
     def get_copy_from_rev( self ):
         """Returns the revision the node has been copied from or zero."""
         return self.__copy_from_rev
-
-    def set_action( self, action ):
-        """Set the action of this node.
-        
-            - action: one of 'add', 'delete', 'change' or 'replace'"""
-
-        if self.__action != "":
-            raise SvnDumpException, "Action cannot be changed."
-        if action != "add" and action != "delete" and \
-           action != "change" and action != "replace":
-            raise SvnDumpException, "Unknown action '%s'." % action
-        self.__action = action
 
     def set_copy_from( self, path, revnr ):
         """Sets copy-from-path and copy-from-rev.

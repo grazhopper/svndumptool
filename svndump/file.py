@@ -390,8 +390,11 @@ class SvnDumpFile:
                 offset = 0
             # add node
             path = tags["Node-path:"]
-            node = SvnDumpNode( tags["Node-kind:"], path )
-            node.set_action( tags["Node-action:"] )
+            action = tags["Node-action:"]
+            if action == "delete":
+                node = SvnDumpNode( path, action, "" )
+            else:
+                node = SvnDumpNode( path, action, tags["Node-kind:"] )
             if properties != None:
                 node.set_properties( properties )
             if tags.has_key( "Node-copyfrom-path:" ):
@@ -558,7 +561,7 @@ class SvnDumpFile:
             # write text
             if node.has_text():
                 node.write_text_to_file( self.__file )
-            self.__file.write( "\n" )
+                self.__file.write( "\n" )
         # CR after each node
         self.__file.write( "\n" )
 

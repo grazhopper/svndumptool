@@ -167,8 +167,7 @@ class SvnDumpMerge:
                                         "svn:author" : self.__out_author,
                                         "svn:date" : oldestStr } )
             for dirName in self.__out_dirs:
-                node = SvnDumpNode( "dir", dirName )
-                node.set_action( "add" )
+                node = SvnDumpNode( dirName, "add", "dir" )
                 self.outDump.add_node( node )
 
         # loop over all revisions
@@ -246,8 +245,7 @@ class SvnDumpMerge:
             return node
 
         # do the rename
-        newNode = SvnDumpNode( newPath, node.get_kind() )
-        newNode.set_action( node.get_action() )
+        newNode = SvnDumpNode( newPath, node.get_action(), node.get_kind() )
         if node.has_copy_from():
             newNode.set_copy_from( node.get_copy_from_path(),
                                    node.get_copy_from_rev() )

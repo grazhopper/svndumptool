@@ -230,7 +230,7 @@ class SvnDumpDiff:
             else:
                 i2 = -1
             indexlist.append( [ i, i2 ] )
-        for nodekey, i2 in list2:
+        for nodekey, i2 in list2.items():
             indexlist.append( [ -1, i2 ] )
 
         for indices in indexlist:
