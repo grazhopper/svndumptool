@@ -49,6 +49,7 @@ class SvnDumpDiffCallback:
         self.__rev_printed = False
         self.__node_printed = False
         self.__prophdr_printed = False
+        self.__summary = {}
 
     def add_ignore( self, type ):
         """Adds an ignore."""
@@ -82,8 +83,25 @@ class SvnDumpDiffCallback:
         if self.verbosity > 0:
             if self.diffs:
                 print "Done, found diffs."
+                if len( self.__summary ) > 0:
+                    print "  %-15s %7s %7s" % ( "type", "total", "showed" )
+                for type in self.__summary:
+                    counts = self.__summary[type]
+                    print "  %-15s %7d %7d" % ( type, counts[0], counts[1] )
             else:
                 print "Done."
+
+    def __summary_inc( self, type, show ):
+        """
+        """
+        s = 0
+        if show:
+            s = 1
+        if self.__summary.has_key( type ):
+            counts = self.__summary[type]
+            self.__summary[type] = [ counts[0] + 1, counts[1] + s ]
+        else:
+            self.__summary[type] = [ 1, s ]
 
     def next_revision( self, revnr1, revnr2 ):
         """Called when starting to compare a new revision."""
@@ -123,124 +141,151 @@ class SvnDumpDiffCallback:
     def rev_diff( self, type, value1, value2 ):
         """Called when a difference has been found."""
 
+        show = True
         if self.__ignores.has_key( type ):
-            return
-        self.diffs = True
-        if self.verbosity > 0:
-            self.__print_rev()
-            print "+ Different %s:" % type
-            print "    dump1: '%s'" % value1
-            print "    dump2: '%s'" % value2
+            show = False
+        self.__summary_inc( type, show )
+        if show:
+            self.diffs = True
+            if self.verbosity > 0:
+                self.__print_rev()
+                print "+ Different %s:" % type
+                print "    dump1: '%s'" % value1
+                print "    dump2: '%s'" % value2
 
     def revprop_diff( self, name, value1, value2 ):
         """Called when a revprop is in one dump only."""
 
+        show = True
         if self.__ignores.has_key( "RevPropDiff" ):
-            return
+            show = False
         if self.__ignore_revprop.has_key( name ):
-            return
-        self.diffs = True
-        if self.verbosity > 0:
-            if not self.__prophdr_printed:
-                self.__prophdr_printed = True
-                print "  Properties:"
-            print "    Property '%s'" % name
-            print "      dump1: '%s'" % value1
-            print "      dump2: '%s'" % value2
+            show = False
+        self.__summary_inc( "RevPropDiff", show )
+        if show:
+            self.diffs = True
+            if self.verbosity > 0:
+                if not self.__prophdr_printed:
+                    self.__prophdr_printed = True
+                    print "  Properties:"
+                print "    Property '%s'" % name
+                print "      dump1: '%s'" % value1
+                print "      dump2: '%s'" % value2
 
     def revprop_missing( self, dumpnr, name, value ):
         """Called when a revprop is in one dump only."""
 
+        show = True
         if self.__ignores.has_key( "RevPropMissing" ):
-            return
+            show = False
         if self.__ignore_revprop.has_key( name ):
-            return
-        self.diffs = True
-        if self.verbosity > 0:
-            if not self.__prophdr_printed:
-                self.__prophdr_printed = True
-                print "  Properties:"
-            print "    Property '%s' missing in dump%d" % ( name, dumpnr )
-            print "      dump%d: '%s'" % ( 3-dumpnr, value )
+            show = False
+        self.__summary_inc( "RevPropMissing", show )
+        if show:
+            self.diffs = True
+            if self.verbosity > 0:
+                if not self.__prophdr_printed:
+                    self.__prophdr_printed = True
+                    print "  Properties:"
+                print "    Property '%s' missing in dump%d" % ( name, dumpnr )
+                print "      dump%d: '%s'" % ( 3-dumpnr, value )
 
     def node_diff( self, type, value1, value2 ):
         """Called when a difference has been found."""
 
+        show = True
         if self.__ignores.has_key( type ):
-            return
-        self.diffs = True
-        if self.verbosity > 0:
-            self.__print_node()
-            print "+   Different %s:" % type
-            print "      dump1: '%s'" % value1
-            print "      dump2: '%s'" % value2
+            show = False
+        self.__summary_inc( type, show )
+        if show:
+            self.diffs = True
+            if self.verbosity > 0:
+                self.__print_node()
+                print "+   Different %s:" % type
+                print "      dump1: '%s'" % value1
+                print "      dump2: '%s'" % value2
 
     def node_missing( self, dumpnr, node ):
         """Called when a node exists in one dump only."""
 
+        show = True
         if self.__ignores.has_key( "NodeMissing" ):
-            return
-        self.diffs = True
-        if self.verbosity > 0:
-            self.__print_rev()
-            print "+ Node missing in dump%d:" % dumpnr
-            print "    Node: %s %s '%s'" % \
-                ( node.get_action(), node.get_kind(), node.get_path() )
+            show = False
+        self.__summary_inc( "NodeMissing", show )
+        if show:
+            self.diffs = True
+            if self.verbosity > 0:
+                self.__print_rev()
+                print "+ Node missing in dump%d:" % dumpnr
+                print "    Node: %s %s '%s'" % \
+                    ( node.get_action(), node.get_kind(), node.get_path() )
 
     def wrong_md5( self, dumpnr, should, calc ):
         """Called when text has worng MD5."""
 
+        show = True
         if self.__ignores.has_key( "WrongMD5" ):
-            return
-        self.diffs = True
-        if self.verbosity > 0:
-            self.__print_node()
-            print "+   Wrong MD5 in dump%d:" % dumpnr
-            print "      should be:   '%s'" % should
-            print "      calculated:  '%s'" % calc
+            show = False
+        self.__summary_inc( "WrongMD5", show )
+        if show:
+            self.diffs = True
+            if self.verbosity > 0:
+                self.__print_node()
+                print "+   Wrong MD5 in dump%d:" % dumpnr
+                print "      should be:   '%s'" % should
+                print "      calculated:  '%s'" % calc
 
     def text_diff( self, type ):
         """Called when text differs."""
 
+        show = True
         if self.__ignores.has_key( type ):
-            return
-        self.diffs = True
-        if self.verbosity > 0:
-            self.__print_node()
-            print "+   Text differs (type '%s')" % type
+            show = False
+        self.__summary_inc( type, show )
+        if show:
+            self.diffs = True
+            if self.verbosity > 0:
+                self.__print_node()
+                print "+   Text differs (type '%s')" % type
 
     def prop_diff( self, name, value1, value2 ):
         """Called when a revprop is in one dump only."""
 
+        show = True
         if self.__ignores.has_key( "PropDiff" ):
-            return
+            show = False
         if self.__ignore_property.has_key( name ):
-            return
-        self.diffs = True
-        if self.verbosity > 0:
-            self.__print_node()
-            if not self.__prophdr_printed:
-                self.__prophdr_printed = True
-                print "    Properties:"
-            print "+     Property '%s'" % name
-            print "        dump1: '%s'" % value1
-            print "        dump2: '%s'" % value2
+            show = False
+        self.__summary_inc( "PropDiff", show )
+        if show:
+            self.diffs = True
+            if self.verbosity > 0:
+                self.__print_node()
+                if not self.__prophdr_printed:
+                    self.__prophdr_printed = True
+                    print "    Properties:"
+                print "+     Property '%s'" % name
+                print "        dump1: '%s'" % value1
+                print "        dump2: '%s'" % value2
 
     def prop_missing( self, dumpnr, name, value ):
         """Called when a revprop is in one dump only."""
 
+        show = True
         if self.__ignores.has_key( "PropMissing" ):
-            return
+            show = False
         if self.__ignore_property.has_key( name ):
-            return
-        self.diffs = True
-        if self.verbosity > 0:
-            self.__print_node()
-            if not self.__prophdr_printed:
-                self.__prophdr_printed = True
-                print "    Properties:"
-            print "+     Property '%s' missing in dump%d" % ( name, dumpnr )
-            print "        dump%d: '%s'" % ( 3-dumpnr, value )
+            show = False
+        self.__summary_inc( "PropMissing", show )
+        if show:
+            self.diffs = True
+            if self.verbosity > 0:
+                self.__print_node()
+                if not self.__prophdr_printed:
+                    self.__prophdr_printed = True
+                    print "    Properties:"
+                print "+     Property '%s' missing in dump%d" % ( name, dumpnr )
+                print "        dump%d: '%s'" % ( 3-dumpnr, value )
 
 class SvnDumpDiff:
     """A class for comparing svn dump files."""
@@ -534,10 +579,6 @@ def svndump_diff_cmdline( appname, args ):
     parser.add_option( "-e", "--check-eol",
                        action="store_const", dest="eol", const=1, default=0,
                        help="check for EOL differences" )
-    # --ignore-eol is the same as --check-eol --ignore EOL
-    #parser.add_option( "-E", "--ignore-eol",
-    #                   action="store_const", dest="eol", const=2,
-    #                   help="ignore EOL differences" )
     parser.add_option( "-q", "--quiet",
                        action="store_const", dest="verbose", const=0, default=1,
                        help="quiet output" )
