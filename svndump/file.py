@@ -115,7 +115,7 @@ class SvnDumpFile:
             return []
         words = line.split( " ", 1 )
         if len( words ) != 2:
-            raise SvnDumpException, "illegal Tag line"
+            raise SvnDumpException, "illegal Tag line '%s'" % line
         return words
 
     def __get_tag_list( self ):
