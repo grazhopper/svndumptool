@@ -71,6 +71,8 @@ class SvnDumpEolFix:
         self.__dry_run = True
         # (do not) set eol-style on text files
         self.__eol_style = None
+        # fix types
+        self.__fix = 0
 
         # temp files
         self.__temp_dir = "."
@@ -119,6 +121,22 @@ class SvnDumpEolFix:
             to the given value."""
         self.__eol_style = eolstyle
 
+    def set_fix_options( self, fix ):
+        """Set what to fix.
+
+            fix is a string containing comma separated options.
+            valid values are:
+             'CRLF'   replace CRLF by LF
+             'CR'     replace CR by LF
+             'DelCR'  remove CR"""
+        self.__fix = 0
+        for f in fix.split( ',' ):
+            if f == "CRLF":
+                self.__fix |= 1
+            elif f == "CR":
+                self.__fix |= 2
+            elif f == "DelCR":
+                self.__fix |= 4
 
     def execute( self ):
         """Executes the EolFix."""
@@ -215,6 +233,7 @@ class SvnDumpEolFix:
             md = md5.new()
             data = node.text_read( handle )
             carry = ""
+            cr_warning = False
             while len(data) > 0:
                 if len(carry) != 0:
                     data = carry + data
@@ -224,7 +243,17 @@ class SvnDumpEolFix:
                     data = data[:n]
                 else:
                     carry = ""
-                data = data.replace( "\r\n", "\n" ).replace( "\r", "\n" )
+                #data = data.replace( "\r\n", "\n" ).replace( "\r", "\n" )
+                if self.__fix & 1 != 0:
+                    data = data.replace( "\r\n", "\n" )
+                if self.__fix & 2 != 0:
+                    data = data.replace( "\r", "\n" )
+                if self.__fix & 4 != 0:
+                    data = data.replace( "\r", "" )
+                if not cr_warning and data.find( "\r" ) >= 0:
+                    cr_warning = True
+                    print "    WARNING: file still contains CR"
+                    print "      file: '%s'" % node.get_path()
                 md.update( data )
                 outfile.write( data )
                 outlen = outlen + len( data )
@@ -258,13 +287,22 @@ class SvnDumpEolFix:
 def svndump_eol_fix_cmdline( appname, args ):
     """cmdline..."""
 
-    usage = "usage: %s [options] src dst" % appname
+    usage = "usage: %s [options] src [dst]" % appname
     parser = OptionParser( usage=usage, version="%prog 0.1" )
     parser.add_option( "-E", "--eol-style",
                        action="store", dest="eolstyle", default=None,
                        type="choice", choices=[ "native", "LF", "CRLF", "CR" ],
                        help="add svn:eol-style property to text files, "
                             "the value can be 'native', 'LF', 'CRLF' or 'CR'" )
+    parser.add_option( "-f", "--fix",
+                       action="store", dest="fix",
+                       type="string", default="CRLF",
+                       help="a comma separated list of what (and how) to fix, "
+                            "can be a combination of "
+                            "'CRLF', 'CR' and 'DelCR'. If 'CR' and 'DelCR' "
+                            "both specified 'DelCR' is ignored. 'CRLF' and "
+                            "'CR' mean replace them by LF, 'DelCR' means "
+                            "remove CR's." )
     parser.add_option( "-m", "--mode",
                        action="store", dest="mode", default="prop",
                        type="choice", choices=[ "prop", "regexp" ],
@@ -278,14 +316,11 @@ def svndump_eol_fix_cmdline( appname, args ):
                        help="just show what would be done but don't do it" )
     (options, args) = parser.parse_args( args )
 
-    print options
-    print args
-
-    #if len( args ) < 1 or len( args ) > 2:
-    #    print
-
     eolfix = SvnDumpEolFix()
 
+    if len( args ) < 1 or len( args ) > 2:
+        print "please specify one source and optionally one destination file."
+        return 1
     eolfix.set_input_file( args[0] )
     if len( args ) == 2:
         eolfix.set_output_file( args[1] )
@@ -295,6 +330,7 @@ def svndump_eol_fix_cmdline( appname, args ):
         eolfix.set_mode_regexp( options.regexp )
     if options.eolstyle != None:
         eolfix.set_eol_style( options.eolstyle )
+    eolfix.set_fix_options( options.fix )
 
     eolfix.execute()
     return 0
