@@ -371,7 +371,7 @@ class SvnDumpNode:
         if self.__text_len == -1:
             raise SvnDumpException, "Node %s has no text" % self.__path
         if len(self.__file_name) > 0:
-            self.__file_obj = open( self.__file_name, "r" )
+            self.__file_obj = open( self.__file_name, "rb" )
         else:
             self.__file_obj.seek( self.__file_offset )
         cnt = self.__text_len
@@ -409,7 +409,7 @@ class SvnDumpNode:
         # create handle
         handle = {}
         if len(self.__file_name) > 0:
-            handle["file_obj"] = open( self.__file_name, "r" )
+            handle["file_obj"] = open( self.__file_name, "rb" )
             handle["close"] = True
             handle["offset"] = 0
             handle["length"] = self.__text_len

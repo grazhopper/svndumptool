@@ -278,7 +278,7 @@ class SvnDumpFile:
         self.__filename = filename
 
         # open the file for reading
-        self.__file = open( filename, "r" )
+        self.__file = open( filename, "rb" )
 
         # check that it is a svn dump file
         tag = self.__get_tag( 1 )
@@ -324,7 +324,7 @@ class SvnDumpFile:
         rev0date = self.__set_rev_date( rev0date )
 
         # open file for writing
-        self.__file = open( filename, "w" )
+        self.__file = open( filename, "wb" )
 
         # write header and uuid
         self.__file.writelines( [ "SVN-fs-dump-format-version: 2\n",
@@ -374,7 +374,7 @@ class SvnDumpFile:
         self.__rev_nr = firstRevNr - 1
 
         # open file for writing
-        self.__file = open( filename, "w" )
+        self.__file = open( filename, "wb" )
 
         # write header and uuid
         self.__file.writelines( [ "SVN-fs-dump-format-version: 2\n",
