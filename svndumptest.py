@@ -23,11 +23,13 @@
 
 from os import mkdir, system, listdir, remove, rmdir
 from os.path import isdir, isfile, abspath
+import time # for svn cp bug
 import zlib
 
 import svndump
 from svndump.node import SvnDumpNode
 from svndump.file import SvnDumpFile
+from svndump.diff import svndump_diff_cmdline
 
 def run( cmd ):
     print "cmd <%s>" % cmd
@@ -62,6 +64,11 @@ def create_text( type, fileid, revnr ):
 def svn_create_dump_file( filename, fileid, data, reposdir, wcdir ):
     """Creates a svn dump file using the svn commandline."""
 
+    print ""
+    print "=" * 80
+    print "=== Initialize"
+    print ""
+
     # cleanup first
     kill_dir( reposdir )
     kill_dir( wcdir )
@@ -80,6 +87,10 @@ def svn_create_dump_file( filename, fileid, data, reposdir, wcdir ):
         rev = data[irev]
         irev = irev + 1
         revnr = revnr + 1
+        print ""
+        print "=" * 80
+        print "=== Revision %d" % revnr
+        print ""
         if rev.has_key( "author" ):
             author = rev["author"]
         else:
@@ -129,11 +140,16 @@ def svn_create_dump_file( filename, fileid, data, reposdir, wcdir ):
                         fromrev = copyfrom[1]
                         run( "svn cp -r %d '%s' '%s'" %
                                 ( fromrev, fromurl, nodefile ) )
+                        # bug in my svn client ?!?
+                        #run( "svn up '%s'" % nodefile )
+                        # Philip Martin suggested sleep(1), thanks :)
+                        time.sleep(1)
                     else:
                         # it's a normal add
                         add = True
                 if nodedata.has_key( "text" ):
                     # set/modify text
+                    print "write text to '%s'" % path
                     text = create_text( nodedata["text"], fileid, revnr )
                     fileobj = open( nodefile, "wb" )
                     fileobj.write( text )
@@ -154,8 +170,18 @@ def svn_create_dump_file( filename, fileid, data, reposdir, wcdir ):
         # update wc
         run( "svn up '%s'" % wcdir )
 
+    print ""
+    print "=" * 80
+    print "=== Dump"
+    print ""
+
     # dump the repos
     run( "svnadmin dump '%s' > '%s'" % ( reposdir, filename ) )
+
+    print ""
+    print "=== Done"
+    print "=" * 80
+    print ""
 
 def py_create_dump_file( filename, fileid, data, tmpdir ):
     """Creates a svn dump file using the python classes."""
@@ -439,25 +465,66 @@ def write_test_file( tmpdir ):
     filename = tmpdir + "/test.svndmp"
     py_create_dump_file( filename, data, tmpdir )
 
-if __name__ == '__main__':
+def test_init():
+    """Initialize tests."""
+
+    params = {}
+
     # setup a few path variables
     tempdir = abspath( "testtmp" )
+    params["tempdir"] = tempdir
     tempfiles = tempdir + "/files"
+    params["tempfiles"] = tempfiles
     temprepos = tempdir + "/repos"
+    params["temprepos"] = temprepos
     tempwc = tempdir + "/wc"
+    params["tempwc"] = tempwc
+
     # create needed directories
     if not isdir( tempdir ):
         mkdir( tempdir )
     if not isdir( tempfiles ):
         mkdir( tempfiles )
 
+    return params
+
+def test_dumps( params ):
+    """Test 1: Test creating dumps."""
+
+    # get params
+    tempdir = params["tempdir"]
+    tempfiles = params["tempfiles"]
+    temprepos = params["temprepos"]
+    tempwc = params["tempwc"]
+
     # test1: create a dump with commandline and python classes then compare
     svndmp = tempdir + "/testdump1svn"
     pydmp = tempdir + "/testdump1py"
+    pydmp2 = tempdir + "/testdump1py2"
     # create with cmdline
     svn_create_dump_file( svndmp, "test1", data_test1, temprepos, tempwc )
     # create with python
     py_create_dump_file( pydmp, "test1", data_test1, tempfiles )
     # copy the one created with cmdline
-    svndump.copy_dump_file( svndmp, pydmp + "2" )
+    svndump.copy_dump_file( svndmp, pydmp2 )
+    # compare svndmp and pydmp2
+    rc = svndump_diff_cmdline( "svndumptest.py",
+                               [ "-IUUID", "-IRevDateStr", svndmp, pydmp2 ] )
+    if rc != 0:
+        print "diffs found :("
+        return 1
+    # compare svndmp and pydmp
+    rc = svndump_diff_cmdline( "svndumptest.py",
+                               [ "-IUUID", "-IRevDateStr", svndmp, pydmp ] )
+    if rc != 0:
+        print "diffs found :("
+        return 1
+
+    # done.
+    return 0
+
+if __name__ == '__main__':
+
+    params = test_init()
+    test_dumps( params )
 
