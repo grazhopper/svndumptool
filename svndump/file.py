@@ -177,7 +177,7 @@ class SvnDumpFile:
                 else:
                     # delete property
                     propStr = propStr + ("D %d"%len(key)) + "\n" + key + "\n"
-        propStr = propStr + "PROPS-END\n"
+            propStr = propStr + "PROPS-END\n"
         return propStr
 
 

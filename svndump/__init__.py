@@ -24,17 +24,9 @@
 __all__ = [ "common", "node", "file", "merge", "eolfix" ]
 
 import common
+from file import SvnDumpFile
 
-#import OrderedDict
-#import SvnDumpException
-#import SvnDumpNode
-#import SvnDumpFile
-#import SvnDumpMerge
-#import SvnDumpEolFix
-
-
-
-def copyDumpFile( srcfile, dstfile ):
+def copy_dump_file( srcfile, dstfile ):
     "copy a dumpfile"
 
     # SvnDumpFile classes for reading/writing dumps
@@ -65,71 +57,4 @@ def copyDumpFile( srcfile, dstfile ):
     # cleanup
     srcdmp.close()
     dstdmp.close()
-
-def fixEolStyleAndAddRevisionFromDump( srcdump, dstdump, textfiles ):
-    """++++
-        - srcdump: source dump file
-        - dstdump: destination dump file"""
-
-    # check of state is done in add_rev
-    # add revision and revprops
-    dstdump.add_rev( srcdump.get_rev_props() )
-
-    #print textfiles
-    # add nodes
-    index = 0
-    nodeCount = srcdump.get_node_count()
-    while index < nodeCount:
-        node = srcdump.get_node( index )
-        istextfile = textfiles.has_key( node.get_path() )
-        if not istextfile and node.get_properties() != None:
-            if node.get_properties().has_key("svn:eol-style"):
-                istextfile = True
-                textfiles[ node.get_path() ] = 1
-        if istextfile:
-            #print "convert node %s in r%d" % ( node.get_path(), srcdump.get_rev_nr() )
-            if node.convert_eol_hack( "tmpnode_%d" % index ):
-                print "  converted %s" %  node.get_path()
-        dstdump.add_node( node )
-        index = index + 1
-
-def fixEolStyle( srcfile, dstfile ):
-    "copy a dumpfile"
-    # add support for --dry-run
-
-    # SvnDumpFile classes for reading/writing dumps
-    srcdmp = SvnDumpFile()
-    dstdmp = SvnDumpFile()
-
-    # open source file
-    srcdmp.open( srcfile )
-
-    # a dict listing the textfiles
-    textfiles = {}
-
-    hasrev = srcdmp.read_next_rev()
-    if hasrev:
-        if srcdmp.get_rev_nr() == 0:
-            # create new dump with revision 0
-            dstdmp.create_with_rev_0( dstfile, srcdmp.get_uuid(),
-                        srcdmp.get_rev_date_str() )
-            hasrev = srcdmp.read_next_rev()
-        else:
-            # create new dump starting with the same revNr as the original dump
-            dstdmp.create_with_rev_n( dstfile, srcdmp.get_uuid(),
-                        srcdmp.get_rev_nr() )
-        # now copy all the revisions
-        while hasrev:
-            print "\n\n*** r%d ***\n" % srcdmp.get_rev_nr()
-            fixEolStyleAndAddRevisionFromDump( srcdmp, dstdmp, textfiles )
-            hasrev = srcdmp.read_next_rev()
-    else:
-        print "no revisions in the source dump '%s' ???" % srcfile
-
-    # cleanup
-    srcdmp.close()
-    dstdmp.close()
-    return 0
-
-
 
