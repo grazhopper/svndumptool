@@ -100,7 +100,7 @@ def svn_create_dump_file( filename, fileid, data, reposdir, wcdir ):
         if rev.has_key( "log" ):
             log = rev["log"]
         else:
-            log = "log for file '%s' rev %d" % ( fileid, revnr )
+            log = 'log for file "%s" rev %d' % ( fileid, revnr )
         nodes = rev["nodes"]
         nnode = len(nodes)
         inode = 0
@@ -116,7 +116,7 @@ def svn_create_dump_file( filename, fileid, data, reposdir, wcdir ):
             elif kind == "dir" and action == "replace":
                 # replace = rm and add
                 run( "svn rm '%s'" % nodefile )
-                run( "svn add '%s'" % nodefile )
+                run( "svn add --no-auto-props '%s'" % nodefile )
             elif kind == "dir" and action == "add":
                 if isdir( nodefile ):
                     # allready there, probably copied with parent dir
@@ -160,7 +160,7 @@ def svn_create_dump_file( filename, fileid, data, reposdir, wcdir ):
                     fileobj.write( text )
                     fileobj.close()
                 if add:
-                    run( "svn add '%s'" % nodefile )
+                    run( "svn add --no-auto-props '%s'" % nodefile )
             if nodedata.has_key( "props" ):
                 # for each property do a propset or propdel
                 props = nodedata["props"]
@@ -219,7 +219,7 @@ def py_create_dump_file( filename, fileid, data, tmpdir ):
         if rev.has_key( "log" ):
             revprops["svn:log"] = rev["log"]
         else:
-            revprops["svn:log"] = "log for file '%s' rev %d" % \
+            revprops["svn:log"] = 'log for file "%s" rev %d' % \
                                 ( fileid, revnr )
         dump.add_rev( revprops )
         nodes = rev["nodes"]
@@ -252,7 +252,7 @@ def py_create_dump_file( filename, fileid, data, tmpdir ):
                 node.set_text_file( textfile )
             if action == "delete":
                 del nodeprops[path]
-            elif action == "add":
+            elif action == "add" or action == "replace":
                 if nodedata.has_key("props"):
                     props = nodedata["props"].copy()
                 else:
@@ -269,6 +269,11 @@ def py_create_dump_file( filename, fileid, data, tmpdir ):
             dump.add_node( node )
     dump.close()
 
+#
+# WARNING
+#
+# svn adds a trailing LF for the property svn:ignore !
+# 
 data_test1 = [
     {
         "nr":       0,
@@ -284,7 +289,7 @@ data_test1 = [
                 "kind":     "dir",
                 "action":   "add",
                 "props":    {
-                    "svn:ignore":   "*.tmp"
+                    "svn:ignore":   "*.tmp\n"
                 }
             },
             {
@@ -292,7 +297,7 @@ data_test1 = [
                 "kind":     "dir",
                 "action":   "add",
                 "props":    {
-                    "svn:ignore":   "*.tmp",
+                    "svn:ignore":   "*.tmp\n",
                     "broken":       "false"
                 }
             },
@@ -550,14 +555,15 @@ def test_dumps( params ):
         print "diffs found :("
         return 1
     rc = svndump_diff_cmdline( "svndumptest.py",
-                               [ "-IUUID", "-IRevDateStr", svndmp, pydmp2 ] )
+                               [ svndmp, pydmp2 ] )
     add_test_result( params, "test_dumps", "diff svndmp pydmp2", rc )
     if rc != 0:
         print "diffs found :("
         return 1
     # compare svndmp and pydmp
     rc = svndump_diff_cmdline( "svndumptest.py",
-                               [ "-IUUID", "-IRevDateStr", svndmp, pydmp ] )
+                               [ "-IUUID", "-IRevDate", "-IRevDateStr",
+							     "--ignore-revprop=svn:date", svndmp, pydmp ] )
     add_test_result( params, "test_dumps", "diff svndmp pydmp", rc )
     if rc != 0:
         print "diffs found :("
@@ -600,7 +606,8 @@ def test_eolfix( params ):
     # compare broken and fixed
     rc = svndump_diff_cmdline( "svndumptest.py",
                                [ "-e", "-IEOL", "-ITextLen", "-ITextMD5",
-                                 broken, fixed2 ] )
+                                 "--ignore-property=svn:eol-style",
+								 broken, fixed2 ] )
     add_test_result( params, "test_eolfix", "diff broken fixed2", rc )
     if rc != 0:
         print "diffs found :("
