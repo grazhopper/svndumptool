@@ -172,7 +172,11 @@ class SvnDumpDiff:
 
         self.__filename1 = filename1
         self.__filename2 = filename2
+        self.__check_eol = False
 
+    def set_check_eol( self, check=True ):
+        """Set or clear the check-eol flag."""
+        self.__check_eol = check
 
     def execute( self, callback ):
         """Execute the diff."""
@@ -308,77 +312,97 @@ class SvnDumpDiff:
         str2 = node2.text_read( handle2 )
         n1 = len(str1)
         n2 = len(str2)
-        old1 = ""
-        old2 = ""
+        cmpstr1 = ""
+        cmpstr2 = ""
+        defreadcount = 16384
+        readcount1 = defreadcount
+        readcount2 = defreadcount
+        # how to compare? 0=normal, 1=eol-check, 2=had a diff
         cmpmode = 0
-        havediff = 0
         while n1 > 0 or n2 > 0:
-            md1.update( str1 )
-            md2.update( str2 )
-            if cmpmode == 0:
-                if str1 != str2:
-                    # have a diff
-                    cmpmode = 2
-                    havediff = 2
-                    # check for EOL diff
-                    if n1 == n2: # this cmp is crap!
-                        n = self.__str_diff_index( str1, str2 )
-                        if  str1[n] == "\n" or str1[n] == "\r" or \
-                            str2[n] == "\n" or str2[n] == "\r":
-                            # EOL mode
-                            cmpmode = 1
-                            havediff = 1
-            #if cmpmode == 0:
-            #   implement EOL stuff ++++++
             if n1 > 0:
-                old1 = str1[-1]
-                str1 = node1.text_read( handle1 )
+                md1.update( str1 )
+                cmpstr1 += str1
+            if n2 > 0:
+                md2.update( str2 )
+                cmpstr2 += str2
+            if cmpstr1 == cmpstr2:
+                # save last char for possible eol compare
+                cmpstr1 = cmpstr1[-1:]
+                cmpstr2 = cmpstr2[-1:]
+            elif cmpmode == 0:
+                # binary compare had a diff
+                if self.__check_eol:
+                    # start doing eol checks
+                    cmpmode = 1
+                else:
+                    # no eol check so files differ
+                    cmpmode = 2
+                    cmpstr1 = ""
+                    cmpstr2 = ""
+            elif cmpmode == 1:
+                # eol-diff or real diff?
+                cn1 = len( cmpstr1 ) - 1
+                cn2 = len( cmpstr2 ) - 1
+                i1 = 0
+                i2 = 0
+                while i1 < cn1 and i2 < cn2:
+                    if (( cmpstr1[i1] == '\n' or cmpstr1[i1] == '\r' ) and
+                        ( cmpstr2[i2] == '\n' or cmpstr2[i2] == '\r' )):
+                        # check for LF/CRLF/CR sequence
+                        if cmpstr1[i1] == '\r' and cmpstr1[i1+1] == '\n':
+                            i1 += 1
+                        if cmpstr2[i2] == '\r' and cmpstr2[i2+1] == '\n':
+                            i2 += 1
+                    elif cmpstr1[i1] != cmpstr2[i2]:
+                        # found a diff
+                        cmpmode = 2
+                        cmpstr1 = ""
+                        cmpstr2 = ""
+                        break
+                    # next...
+                    i1 += 1
+                    i2 += 1
+                if cmpmode == 1:
+                    # remove processed data from cmpstr and adjust readcount
+                    cmpstr1 = cmpstr1[i1:]
+                    cmpstr2 = cmpstr2[i2:]
+                    cn1 = len( cmpstr1 ) - 1
+                    cn2 = len( cmpstr2 ) - 1
+                    if cn1 > cn2:
+                        readcount1 = defreadcount + cn1 - cn2
+                        readcount2 = defreadcount
+                    else:
+                        readcount1 = defreadcount
+                        readcount2 = defreadcount + cn2 - cn1
+                else:
+                    # reset readcount
+                    readcount1 = defreadcount
+                    readcount2 = defreadcount
+            else:
+                # cmpmode = 2: just clear compare strings
+                cmpstr1 = ""
+                cmpstr2 = ""
+            # read more text...
+            if n1 > 0:
+                str1 = node1.text_read( handle1, readcount1 )
                 n1 = len(str1)
             if n2 > 0:
-                old2 = str2[-1]
-                str2 = node2.text_read( handle2 )
+                str2 = node2.text_read( handle2, readcount2 )
                 n2 = len(str2)
+        if cmpmode == 1 and cmpstr1 != cmpstr2:
+            # diff in the last char
+            cmpmode = 2
         mdstr1 = md1.hexdigest()
         mdstr2 = md2.hexdigest()
         if node1.get_text_md5() != mdstr1:
             callback.wrong_md5( 1, node1.get_text_md5(), mdstr1 )
         if node2.get_text_md5() != mdstr2:
             callback.wrong_md5( 2, node2.get_text_md5(), mdstr2 )
-        if havediff != 0:
-            if havediff == 1:
-                callback.text_diff( "EOL" )
-            else:
-                callback.text_diff( "Text" )
-
-    def __str_diff_index( self, str1, str2 ):
-        """Returns the index of the first diff between two strings."""
-
-        n1 = len(str1)
-        n2 = len(str2)
-        if n1 > n2:
-            n = n2
-        else:
-            n = n1
-        i = 0
-        while i < n:
-            if str1[i] != str2[i]:
-                return i
-            i = i + 1
-        return i
-        # crap :(
-        #nh = len(str1)
-        #n = len(str2)
-        #if n < nh:
-        #    nh = n + 1
-        #nl = 0
-        #while (nh-nl) > 1:
-        #    nm = (nh + nl) / 2
-        #    if str1[:nm] == str2[:nm]:
-        #        nl = nm
-        #    else:
-        #        nh = nm
-        
-                
+        if cmpmode == 1:
+            callback.text_diff( "EOL" )
+        elif cmpmode == 1:
+            callback.text_diff( "Text" )
 
 def svndump_diff_cmdline( appname, args ):
     """cmdline..."""
@@ -388,9 +412,10 @@ def svndump_diff_cmdline( appname, args ):
     parser.add_option( "-e", "--check-eol",
                        action="store_const", dest="eol", const=1, default=0,
                        help="check for EOL differences" )
-    parser.add_option( "-E", "--ignore-eol",
-                       action="store_const", dest="eol", const=2,
-                       help="ignore EOL differences" )
+    # --ignore-eol is the same as --check-eol --ignore EOL
+    #parser.add_option( "-E", "--ignore-eol",
+    #                   action="store_const", dest="eol", const=2,
+    #                   help="ignore EOL differences" )
     parser.add_option( "-q", "--quiet",
                        action="store_const", dest="verbose", const=0, default=1,
                        help="quiet output" )
@@ -417,20 +442,17 @@ def svndump_diff_cmdline( appname, args ):
     if len(args) != 2:
         print "please specify exactly two dump files."
         return 1
+
     diff = SvnDumpDiff( args[0], args[1] )
     callback = SvnDumpDiffCallback( options.verbose )
 
+    # check-eol ?
+    if options.eol != 0:
+        diff.set_check_eol()
+    # set the ignores
     if options.ignores != None:
         for i in options.ignores:
             callback.add_ignore( i )
-
-    #diff.set_input_file( args[0] )
-    #if len( args ) == 2:
-    #    diff.set_output_file( args[1] )
-    #if options.mode == "prop":
-    #    diff.set_mode_prop()
-    #elif options.mode == "prop":
-    #    diff.set_mode_regexp( options.regexp )
 
     diff.execute( callback )
     if callback.had_diffs():
