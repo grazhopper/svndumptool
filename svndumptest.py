@@ -21,6 +21,7 @@
 #
 #===============================================================================
 
+import sys
 from os import mkdir, system, listdir, remove, rmdir
 from os.path import isdir, isfile, abspath
 import time # for svn cp bug
@@ -208,6 +209,7 @@ def py_create_dump_file( filename, fileid, data, tmpdir ):
         rev = data[irev]
         irev = irev + 1
         revnr = revnr + 1
+        print "  rev %d" % revnr
         revprops = {}
         revprops["svn:date"] = rev["date"]
         if rev.has_key( "author" ):
@@ -229,6 +231,7 @@ def py_create_dump_file( filename, fileid, data, tmpdir ):
             action = nodedata["action"]
             kind = nodedata["kind"]
             path = nodedata["path"]
+            print "    %s %s '%s'" % ( action, kind, path )
             node = SvnDumpNode( path, action, kind )
             if nodedata.has_key( "copyfrom" ):
                 copyfrom = nodedata["copyfrom"]
@@ -251,7 +254,7 @@ def py_create_dump_file( filename, fileid, data, tmpdir ):
                 del nodeprops[path]
             elif action == "add":
                 if nodedata.has_key("props"):
-                    props = nodedata["props"]
+                    props = nodedata["props"].copy()
                 else:
                     props = {}
                 node.set_properties( props )
@@ -490,7 +493,35 @@ def test_init():
     if not isdir( tempfiles ):
         mkdir( tempfiles )
 
+    # add list for test results
+    params["testresult"] = []
+
     return params
+
+def add_test_result( params, funcname, descr, result ):
+    """add the result of a test to the testlist in params"""
+    params["testresult"].append( ( funcname, descr, result ) )
+
+def show_test_results( params ):
+    """show test results"""
+
+    print ""
+    print "=" * 80
+    print ""
+    print "Test Results:"
+    for t in params["testresult"]:
+        funcname = t[0]
+        descr = t[1]
+        result = t[2]
+        if result == 0:
+            restxt = "OK    "
+        else:
+            restxt = "FAILED"
+        name = "%s: %s" % ( funcname, descr )
+        if len(name) < 40:
+            name += " " * (40 - len(name))
+        print "  %s %s (%d)" % ( name, restxt, result )
+    print ""
 
 def test_dumps( params ):
     """Test 1: Test creating dumps."""
@@ -514,17 +545,20 @@ def test_dumps( params ):
     svndump.copy_dump_file( svndmp, pydmp2 )
     # compare svndmp and pydmp2
     rc = run( "diff -u '%s' '%s'" % ( svndmp, pydmp2 ) )
+    add_test_result( params, "test_dumps", "gnu diff svndmp pydmp2", rc )
     if rc != 0:
         print "diffs found :("
         return 1
     rc = svndump_diff_cmdline( "svndumptest.py",
                                [ "-IUUID", "-IRevDateStr", svndmp, pydmp2 ] )
+    add_test_result( params, "test_dumps", "diff svndmp pydmp2", rc )
     if rc != 0:
         print "diffs found :("
         return 1
     # compare svndmp and pydmp
     rc = svndump_diff_cmdline( "svndumptest.py",
                                [ "-IUUID", "-IRevDateStr", svndmp, pydmp ] )
+    add_test_result( params, "test_dumps", "diff svndmp pydmp", rc )
     if rc != 0:
         print "diffs found :("
         return 1
@@ -544,6 +578,7 @@ def test_eolfix( params ):
     # broken and fixed dumps
     broken = tempdir + "/test_eolfix_1"
     fixed = tempdir + "/test_eolfix_2"
+    fixed2 = tempdir + "/test_eolfix_2b"
 
     # create dump
     py_create_dump_file( broken, "eolfix", data_test1, tempfiles )
@@ -552,7 +587,21 @@ def test_eolfix( params ):
                              [ "-mregexp", "-r", "\\.txt$", broken, fixed ] )
     # compare broken and fixed
     rc = svndump_diff_cmdline( "svndumptest.py",
-                               [ "-E", "-IEOL", "-ITextLen", "-ITextMD5", broken, fixed ] )
+                               [ "-e", "-IEOL", "-ITextLen", "-ITextMD5",
+                                 broken, fixed ] )
+    add_test_result( params, "test_eolfix", "diff broken fixed", rc )
+    if rc != 0:
+        print "diffs found :("
+        return 1
+    # eolfix and add eol-style
+    svndump_eol_fix_cmdline( "svndumptest.py",
+                             [ "-mregexp", "-r", "\\.txt$", "-Enative",
+                               broken, fixed2 ] )
+    # compare broken and fixed
+    rc = svndump_diff_cmdline( "svndumptest.py",
+                               [ "-e", "-IEOL", "-ITextLen", "-ITextMD5",
+                                 broken, fixed2 ] )
+    add_test_result( params, "test_eolfix", "diff broken fixed2", rc )
     if rc != 0:
         print "diffs found :("
         return 1
@@ -560,9 +609,18 @@ def test_eolfix( params ):
     # done.
     return 0
 
+
 if __name__ == '__main__':
 
+    tests = 255
+    if len( sys.argv ) > 1:
+        tests = int( sys.argv[1] )
+
     params = test_init()
-    test_dumps( params )
-    test_eolfix( params )
+    rc = 0;
+    if rc == 0 and tests & 1 != 0:
+        rc = test_dumps( params )
+    if rc == 0 and tests & 2 != 0:
+        rc = test_eolfix( params )
+    show_test_results( params )
 
