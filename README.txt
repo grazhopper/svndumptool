@@ -164,3 +164,15 @@ The safest way to convert EOL's is:
 4. Use 'svndumptool.py diff [options] input.svndmp output.svndmp' to
    compare the dump files. svnadmin load will do another check.
 
+
+
+Python classes
+==============
+
+The python classes are documented using epydoc
+(http://epydoc.sourceforge.net/).
+To generate the HTML docs just enter the followin commands:
+
+   mkdir doc
+   epydoc --html -o doc svndump
+
