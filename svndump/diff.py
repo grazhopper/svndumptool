@@ -44,12 +44,23 @@ class SvnDumpDiffCallback:
         self.index1 = -1
         self.index2 = -1
         self.__ignores = {}
+        self.__ignore_revprop = {}
+        self.__ignore_property = {}
         self.__rev_printed = False
         self.__node_printed = False
+        self.__prophdr_printed = False
 
     def add_ignore( self, type ):
         """Adds an ignore."""
         self.__ignores[type] = None
+
+    def add_revprop_ignore( self, name ):
+        """Adds an ignore."""
+        self.__ignore_revprop[name] = None
+
+    def add_property_ignore( self, name ):
+        """Adds an ignore."""
+        self.__ignore_property[name] = None
 
     def had_diffs( self ):
         """Returns True when diffs were found."""
@@ -62,8 +73,8 @@ class SvnDumpDiffCallback:
         self.filename2 = filename2
         if self.verbosity > 0:
             print "Comparing"
-            print "    dump1: '%s'" % self.filename1
-            print "    dump2: '%s'" % self.filename2
+            print "  dump1: '%s'" % self.filename1
+            print "  dump2: '%s'" % self.filename2
 
     def compare_done( self ):
         """Called at the end of the diff."""
@@ -80,13 +91,14 @@ class SvnDumpDiffCallback:
         self.revnr1 = revnr1
         self.revnr2 = revnr2
         self.__rev_printed = False
+        self.__prophdr_printed = False
         if self.verbosity > 1:
             self.__print_rev()
 
     def __print_rev( self ):
         if not self.__rev_printed:
             self.__rev_printed = True
-            print "  Revision: %d/%d" % ( self.revnr1, self.revnr2 )
+            print "Revision: %d/%d" % ( self.revnr1, self.revnr2 )
 
     def next_node( self, node, index1, index2 ):
         """Called when starting to compare a new node."""
@@ -97,6 +109,7 @@ class SvnDumpDiffCallback:
         self.index1 = index1
         self.index2 = index2
         self.__node_printed = False
+        self.__prophdr_printed = False
         if self.verbosity > 1:
             self.__print_node()
 
@@ -119,6 +132,37 @@ class SvnDumpDiffCallback:
             print "    dump1: '%s'" % value1
             print "    dump2: '%s'" % value2
 
+    def revprop_diff( self, name, value1, value2 ):
+        """Called when a revprop is in one dump only."""
+
+        if self.__ignores.has_key( "RevPropDiff" ):
+            return
+        if self.__ignore_revprop.has_key( name ):
+            return
+        self.diffs = True
+        if self.verbosity > 0:
+            if not self.__prophdr_printed:
+                self.__prophdr_printed = True
+                print "  Properties:"
+            print "    Property '%s'" % name
+            print "      dump1: '%s'" % value1
+            print "      dump2: '%s'" % value2
+
+    def revprop_missing( self, dumpnr, name, value ):
+        """Called when a revprop is in one dump only."""
+
+        if self.__ignores.has_key( "RevPropMissing" ):
+            return
+        if self.__ignore_revprop.has_key( name ):
+            return
+        self.diffs = True
+        if self.verbosity > 0:
+            if not self.__prophdr_printed:
+                self.__prophdr_printed = True
+                print "  Properties:"
+            print "    Property '%s' missing in dump%d" % ( name, dumpnr )
+            print "      dump%d: '%s'" % ( 3-dumpnr, value )
+
     def node_diff( self, type, value1, value2 ):
         """Called when a difference has been found."""
 
@@ -127,9 +171,9 @@ class SvnDumpDiffCallback:
         self.diffs = True
         if self.verbosity > 0:
             self.__print_node()
-            print "+ Different %s:" % type
-            print "    dump1: '%s'" % value1
-            print "    dump2: '%s'" % value2
+            print "+   Different %s:" % type
+            print "      dump1: '%s'" % value1
+            print "      dump2: '%s'" % value2
 
     def node_missing( self, dumpnr, node ):
         """Called when a node exists in one dump only."""
@@ -151,9 +195,9 @@ class SvnDumpDiffCallback:
         self.diffs = True
         if self.verbosity > 0:
             self.__print_node()
-            print "+ Wrong MD5 in dump%d:" % dumpnr
-            print "    should be:   '%s'" % should
-            print "    calculated:  '%s'" % calc
+            print "+   Wrong MD5 in dump%d:" % dumpnr
+            print "      should be:   '%s'" % should
+            print "      calculated:  '%s'" % calc
 
     def text_diff( self, type ):
         """Called when text differs."""
@@ -163,8 +207,41 @@ class SvnDumpDiffCallback:
         self.diffs = True
         if self.verbosity > 0:
             self.__print_node()
-            print "+ Text differs in '%s'" % type
-        
+            print "+   Text differs (type '%s')" % type
+
+    def prop_diff( self, name, value1, value2 ):
+        """Called when a revprop is in one dump only."""
+
+        if self.__ignores.has_key( "PropDiff" ):
+            return
+        if self.__ignore_property.has_key( name ):
+            return
+        self.diffs = True
+        if self.verbosity > 0:
+            self.__print_node()
+            if not self.__prophdr_printed:
+                self.__prophdr_printed = True
+                print "    Properties:"
+            print "+     Property '%s'" % name
+            print "        dump1: '%s'" % value1
+            print "        dump2: '%s'" % value2
+
+    def prop_missing( self, dumpnr, name, value ):
+        """Called when a revprop is in one dump only."""
+
+        if self.__ignores.has_key( "PropMissing" ):
+            return
+        if self.__ignore_property.has_key( name ):
+            return
+        self.diffs = True
+        if self.verbosity > 0:
+            self.__print_node()
+            if not self.__prophdr_printed:
+                self.__prophdr_printed = True
+                print "    Properties:"
+            print "+     Property '%s' missing in dump%d" % ( name, dumpnr )
+            print "        dump%d: '%s'" % ( 3-dumpnr, value )
+
 class SvnDumpDiff:
     """A class for comparing svn dump files."""
 
@@ -217,6 +294,8 @@ class SvnDumpDiff:
             # compare rev author
             # compare rev log
             # compare rev props
+            self.__compare_properties( True, dump1.get_rev_props(),
+                                       dump2.get_rev_props(), callback )
             # compare nodes
             self.__compare_nodes( dump1, dump2, callback )
 
@@ -292,7 +371,9 @@ class SvnDumpDiff:
         if node1.get_copy_from_rev() != node2.get_copy_from_rev():
             callback.node_diff( "CopyFromRev", node1.get_copy_from_rev(), node2.get_copy_from_rev() )
             return
-        # properties...
+        # compare props
+        self.__compare_properties( False, node1.get_properties(),
+                                   node2.get_properties(), callback )
         # compare text
         if node1.has_text() != node2.has_text():
             callback.node_diff( "HasText", node1.has_text(), node2.has_text() )
@@ -317,9 +398,11 @@ class SvnDumpDiff:
         defreadcount = 16384
         readcount1 = defreadcount
         readcount2 = defreadcount
-        # how to compare? 0=normal, 1=eol-check, 2=had a diff
+        # how to compare: 0=normal, 1=eol-check, 2=had a diff
         cmpmode = 0
-        while n1 > 0 or n2 > 0:
+        forceloop = False
+        while n1 > 0 or n2 > 0 or forceloop:
+            forceloop = False
             if n1 > 0:
                 md1.update( str1 )
                 cmpstr1 += str1
@@ -347,8 +430,8 @@ class SvnDumpDiff:
                 i1 = 0
                 i2 = 0
                 while i1 < cn1 and i2 < cn2:
-                    if (( cmpstr1[i1] == '\n' or cmpstr1[i1] == '\r' ) and
-                        ( cmpstr2[i2] == '\n' or cmpstr2[i2] == '\r' )):
+                    if ( ( cmpstr1[i1] == '\n' or cmpstr1[i1] == '\r' ) and
+                         ( cmpstr2[i2] == '\n' or cmpstr2[i2] == '\r' ) ):
                         # check for LF/CRLF/CR sequence
                         if cmpstr1[i1] == '\r' and cmpstr1[i1+1] == '\n':
                             i1 += 1
@@ -363,18 +446,32 @@ class SvnDumpDiff:
                     # next...
                     i1 += 1
                     i2 += 1
+                if i1 == cn1 and i2 == cn2:
+                    # compare the last character
+                    if cmpstr1[i1] == '\r' or cmpstr2[i2] == '\r':
+                        # one of both is a CR and may be the start of a CRLF
+                        pass
+                    elif cmpstr1[i1] == cmpstr2[i2]:
+                        # ok, eat it
+                        i1 += 1
+                        i2 += 1
+                    else:
+                        # it's a diff
+                        cmpmode = 2
                 if cmpmode == 1:
                     # remove processed data from cmpstr and adjust readcount
                     cmpstr1 = cmpstr1[i1:]
                     cmpstr2 = cmpstr2[i2:]
-                    cn1 = len( cmpstr1 ) - 1
-                    cn2 = len( cmpstr2 ) - 1
+                    cn1 = len( cmpstr1 )
+                    cn2 = len( cmpstr2 )
                     if cn1 > cn2:
                         readcount1 = defreadcount + cn1 - cn2
                         readcount2 = defreadcount
                     else:
                         readcount1 = defreadcount
                         readcount2 = defreadcount + cn2 - cn1
+                    if cn1 > 0 and cn2 > 0:
+                        forceloop = True
                 else:
                     # reset readcount
                     readcount1 = defreadcount
@@ -401,8 +498,39 @@ class SvnDumpDiff:
             callback.wrong_md5( 2, node2.get_text_md5(), mdstr2 )
         if cmpmode == 1:
             callback.text_diff( "EOL" )
-        elif cmpmode == 1:
+        elif cmpmode == 2:
             callback.text_diff( "Text" )
+
+    def __compare_properties( self, revprops, props1, props2, callback ):
+        """Compare properties."""
+
+        if props1 == None and props2 == None:
+            return
+        if props1 == None:
+            props1 = {}
+        if props2 == None:
+            props2 = {}
+        common = []
+        for name in props1:
+            if props2.has_key( name ):
+                common.append( name )
+            elif revprops:
+                callback.revprop_missing( 2, name, props1[name] )
+            else:
+                callback.prop_missing( 2, name, props1[name] )
+        for name in props2:
+            if props1.has_key( name ):
+                pass
+            elif revprops:
+                callback.revprop_missing( 1, name, props2[name] )
+            else:
+                callback.prop_missing( 1, name, props2[name] )
+        for name in common:
+            if props1[name] != props2[name]:
+                if revprops:
+                    callback.revprop_diff( name, props1[name], props2[name] )
+                else:
+                    callback.prop_diff( name, props1[name], props2[name] )
 
 def svndump_diff_cmdline( appname, args ):
     """cmdline..."""
@@ -424,7 +552,8 @@ def svndump_diff_cmdline( appname, args ):
                        help="verbose output" )
     ignores = [ "UUID", "RevNr", "RevDate", "RevDateStr", "NodeCount",
                 "Path", "Action", "Kind", "CopyFromPath", "CopyFromRev",
-                "HasText", "TextLen", "TextMD5", "EOL", "Text" ]
+                "HasText", "TextLen", "TextMD5", "EOL", "Text",
+                "PropDiff", "PropMissing", "RevPropDiff", "RevPropMissing" ]
     ignore_help = "'" + ignores[0] + "'"
     for i in ignores[1:-1]:
         ignore_help = ignore_help + ", '" + i + "'"
@@ -435,6 +564,12 @@ def svndump_diff_cmdline( appname, args ):
                        action="append", dest="ignores",
                        type="choice", choices=ignores,
                        help=ignore_help )
+    parser.add_option( "--ignore-revprop",
+                       action="append", dest="ignorerevprop", type="string",
+                       help="ignore a differing/missing revision property" )
+    parser.add_option( "--ignore-property",
+                       action="append", dest="ignoreproperty", type="string",
+                       help="ignore a differing/missing property" )
 
 
     (options, args) = parser.parse_args( args )
@@ -453,9 +588,18 @@ def svndump_diff_cmdline( appname, args ):
     if options.ignores != None:
         for i in options.ignores:
             callback.add_ignore( i )
+    # set revprop ignores
+    if options.ignorerevprop != None:
+        for i in options.ignorerevprop:
+            callback.add_revprop_ignore( i )
+    # set property ignores
+    if options.ignoreproperty != None:
+        for i in options.ignoreproperty:
+            callback.add_property_ignore( i )
 
     diff.execute( callback )
     if callback.had_diffs():
         return 1
     else:
         return 0
+
