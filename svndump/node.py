@@ -30,11 +30,22 @@ class SvnDumpNode:
     """A node of a svn dump file."""
 
     def __init__( self, path, action, kind ):
-        """Init method.
+        """
+        Initializes a new SvnDumpNode.
 
-            - action: one of 'add', 'delete', 'change' or 'replace'
-            - kind: kind of the node (file or dir)
-            - path: path of the node"""
+        @type path: string
+        @param path: Path of this node.
+        @type action: string
+        @param action: Action of this node.
+            Valid actions are:
+             - 'add'
+             - 'delete'
+             - 'change'
+             - 'replace'
+        @type kind: string
+        @param kind: Kind of this node ('dir' or 'file').
+            If action is 'delete' kind may be the empty string.
+        """
 
         # check action
         if action != "add" and action != "delete" and \
@@ -75,69 +86,140 @@ class SvnDumpNode:
         self.__file_obj = None
 
     def __del__( self ):
-        """Delete method, cleanup temp file if needed."""
+        """
+        Delete method, cleanup temp file if needed.
+        """
         if self.__file_delete and self.__file_name != "":
             # delete temp file ++++
             pass
 
     def get_path( self ):
-        """Returns the path of this node."""
+        """
+        Returns the path of this node.
+
+        @rtype:  string
+        @return: The path of this node.
+        """
         return self.__path
 
     def get_action( self ):
-        """Returns the action of this node.
-        
-            The action is one of 'add', 'change', 'delete' or 'replace'."""
+        """
+        Returns the action of this node.
+
+        @rtype:  string
+        @return: Either 'add', 'change', 'delete' or 'replace'.
+        """
         return self.__action
 
     def get_kind( self ):
-        """Returns the kind of this node ('file', 'dir' or 'node')."""
+        """
+        Returns the kind of this node.
+
+        @rtype: string
+        @return: Either 'file', 'dir' or ''.
+        """
         return self.__kind
 
     def get_property( self, name ):
-        """Returns the property."""
-        if self.__properties.has_key( name ):
+        """
+        Returns the  value of the property with the given name.
+
+        If the property does not exist None is returned.
+
+        @type name: string
+        @param name: A property name.
+        @rtype: string
+        @return: Value of the property.
+        """
+        if self.properties != None and self.__properties.has_key( name ):
             return self.__properties[key]
         else:
             return None
 
     def has_properties( self ):
-        """Returns True if this node has properties."""
+        """
+        Returns True if this node has properties.
+
+        @rtype: bool
+        @return: True if this node has properties.
+        """
         return self.__properties != None
 
     def get_properties( self ):
-        """Returns the properties."""
+        """
+        Returns the properties as a dict.
+
+        @rtype: 
+        @return: 
+        """
         return self.__properties
 
     def has_text( self ):
-        """Returns true when this node has text."""
+        """
+        Returns true when this node has text.
+
+        @rtype: bool
+        @return: True when this node has text.
+        """
         return self.__text_len >= 0
 
     def get_text_length( self ):
-        """Returns the lenght of the text."""
+        """
+        Returns the lenght of the text.
+
+        @rtype: integer
+        @return: Length of the text.
+        """
         return self.__text_len
 
     def get_text_md5( self ):
-        """Returns the MD5 hash of the text."""
+        """
+        Returns the MD5 hash of the text.
+
+        @rtype: string
+        @return: MD5 sum of the text.
+        """
         return self.__text_md5
 
     def has_copy_from( self ):
-        """Returns True when this node has copy-from-path and copy-from-rev."""
+        """
+        Returns True when this node has copy-from-path and copy-from-rev.
+
+        @rtype: bool
+        @return: True if this node has copy-from rev and path.
+        """
         return self.__copy_from_rev > 0 and self.__copy_from_path != ""
 
     def get_copy_from_path( self ):
-        """Returns the path the node has been copied from or an empty string."""
+        """
+        Returns the path the node has been copied from or an empty string.
+
+        @rtype: string
+        @return: copy-from-path.
+        """
         return self.__copy_from_path
 
     def get_copy_from_rev( self ):
-        """Returns the revision the node has been copied from or zero."""
+        """
+        Returns the revision the node has been copied from or zero.
+
+        @rtype: integer
+        @return: copy-from-rev.
+        """
         return self.__copy_from_rev
 
     def set_copy_from( self, path, revnr ):
-        """Sets copy-from-path and copy-from-rev.
-        
-            - path:     copy-from-path
-            - revnr:    copy-from-rev"""
+        """
+        Sets copy-from-path and copy-from-rev.
+
+        Only nodes with action 'add' or 'replace' may have copy-from
+        revision and path.
+
+        @type path: string
+        @param path: copy-from-path
+        @type revnr: integer
+        @param revnr: copy-from-rev
+        """
 
         if self.__action != "add" and self.__action != "replace":
             raise SvnDumpException, "Cannot set copy-from for action '%s'" \
@@ -146,11 +228,18 @@ class SvnDumpNode:
         self.__copy_from_rev = revnr
 
     def set_property( self, name, value ):
-        """Sets a property for this node.
+        """
+        Sets a property of this node.
 
-            - name:     property name
-            - value:    property value"""
+        Nodes with action 'delete' cannot have properties.
 
+        @type name: string
+        @param name: Name of the property.
+        @type value: string
+        @param value: Value of the property.
+        """
+
+        # +++ weird check: self.__action == "" !?!
         if self.__action == "" or self.__action == "delete":
             raise SvnDumpException, "Cannot set properties for action '%s'" \
                     % self.__action
@@ -159,10 +248,13 @@ class SvnDumpNode:
         self.__properties[name] = value
 
     def del_property( self, name ):
-        """Deletes a property for this node.
+        """
+        Deletes a property of this node.
 
-            - name:     property name"""
+        @type name: string
+        @param name: Name of the property to delete."""
 
+        # +++ weird check: self.__action == "" !?!
         if self.__action == "" or self.__action == "delete":
             raise SvnDumpException, "Cannot delete properties for action '%s'" \
                     % self.__action
@@ -173,23 +265,34 @@ class SvnDumpNode:
                     self.__properties = None
 
     def set_properties( self, properties ):
-        """Sets the properties for this node.
+        """
+        Sets the properties for this node.
 
-            - properties:   a dict containing the properties"""
+        @type properties: dict( string -> string )
+        @param: A dict containing the properties.
+        """
 
+        # +++ weird check: self.__action == "" !?!
         if self.__action == "" or self.__action == "delete":
             raise SvnDumpException, "Cannot set properties for action '%s'" \
                     % self.__action
         self.__properties = properties
 
     def set_text_file( self, filename, length=-1, md5="", delete=False ):
-        """Sets the text for this node.
+        """
+        Sets the text for this node.
 
-            The text will be read from the specified file.
-            - filename:     name of the file
-            - length:       length of the file
-            - md5:          md5 sum of the text
-            - delete:       if true delete the file"""
+        The text will be read from the specified file.
+
+        @type filename: string
+        @param filename: Name of the file containing the text.
+        @type length: integer, optional
+        @param length: Length of the file.
+        @type md5: string, optional
+        @param md5: MD5 sum of the text if known.
+        @type delete: bool
+        @param delete: When True delete the file.
+        """
 
         if self.__action == "" or self.__action == "delete":
             raise SvnDumpException, "Cannot set text for action '%s'" \
@@ -206,13 +309,21 @@ class SvnDumpNode:
             self.__calculate_md5()
 
     def set_text_fileobj( self, fileobj, offset, length, md5 ):
-        """Sets the text for this node.
+        """
+        Sets the text for this node.
 
-            The text will be read from the specified file.
-            - fileobj:      a file object containing the text
-            - offset:       offset of the text
-            - length:       length of the text
-            - md5:          md5 sum of the text"""
+        The text will be read from the specified file object.
+
+        @type fileobj: file object
+        @param fileobj: A file object opened for reading and
+            containing the text.
+        @type offset: integer
+        @param offset: Offset of the text.
+        @type length: integer
+        @param length: Length of the text.
+        @type md5: string
+        @param md5: MD5 sum of the text.
+        """
 
         if self.__action == "" or self.__action == "delete":
             raise SvnDumpException, "Cannot set text for action '%s'" \
@@ -225,10 +336,14 @@ class SvnDumpNode:
         #    self.__calculate_md5()
 
     def set_text_node( self, node ):
-        """Sets the text for this node.
+        """
+        Sets the text for this node.
 
-            The text will be set from the specified file.
-            - node:         a node"""
+        The text will be that of the specified node.
+
+        @type node: SvnDumpNode
+        @param node: An other node.
+        """
 
         if self.__action == "" or self.__action == "delete":
             raise SvnDumpException, "Cannot set text for action '%s'" \
@@ -242,7 +357,12 @@ class SvnDumpNode:
         self.__text_md5 = node.__text_md5
 
     def write_text_to_file( self, outfile ):
-        """Writes the text to the given file obj."""
+        """
+        Writes the text to the given file object.
+
+        @type outfile: file object
+        @param outfile: A file object opened for writing.
+        """
 
         if self.__text_len == -1:
             raise SvnDumpException, "Node %s has no text" % self.__path
@@ -262,9 +382,22 @@ class SvnDumpNode:
             self.__file_obj = None
 
     def text_open( self ):
-        """Open text.
+        """
+        Open text and return a handle for text read functions.
 
-            Returns a handle for text_read and text_close."""
+        Only one handle per dump file should be opened at the same time. A
+        node for which the text has been set with set_text_node() virtually
+        belongs also to the dump file of the node specified to
+        set_text_node().
+
+        Also while the handle is open write_text_to_file() should not be
+        called.
+
+        B{See also:} text_reopen(), text_read() and text_close().
+
+        @rtype: 'opaque handle'
+        @return: A handle for the text read functions.
+        """
 
         if self.__text_len == -1:
             raise SvnDumpException, "node has no text"
@@ -288,13 +421,33 @@ class SvnDumpNode:
         return handle
 
     def text_reopen( self, handle ):
-        """Reopen the file."""
+        """
+        Reopen the handle.
+
+        Repositions the handle to the start of the text.
+
+        B{See also:} text_open(), text_read() and text_close().
+
+        @type handle: handle
+        @param handle: A handle opened with text_open().
+        """
 
         handle["file_obj"].seek( handle["offset"] )
         handle["pos"] = 0
 
     def text_read( self, handle, count=16384 ):
-        """Read some text."""
+        """
+        Read some text from a handle.
+
+        B{See also:} text_open(), text_reopen() and text_close().
+
+        @type handle: handle
+        @param handle: A handle opened with text_open().
+        @type count: integer, optional
+        @param count: Count of bytes to read.
+        @rtype: string
+        @return: The data read.
+        """
 
         # end of text ?
         if handle["pos"] >= handle["length"]:
@@ -309,13 +462,22 @@ class SvnDumpNode:
         return data
 
     def text_close( self, handle ):
-        """Close the handle."""
+        """
+        Close the handle.
+
+        B{See also:} text_open(), text_reopen() and text_read().
+
+        @type handle: handle
+        @param handle: A handle opened with text_open().
+        """
 
         if handle["close"]:
             handle["file_obj"].close()
 
     def __calculate_md5( self ):
-        """Calculates the md5 of the text."""
+        """
+        Calculates the md5 of the text of this node.
+        """
 
         handle = self.text_open()
         md = md5.new()
