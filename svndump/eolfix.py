@@ -32,6 +32,7 @@ def eolfix_callback_prop( dumpfile, node, textfiles ):
 
     # do we allready know that it is a textfile ?
     if textfiles.has_key( node.get_path() ):
+        # +++ should i check mime-type here ?
         if node.get_action() == "delete":
             del textfiles[node.get_path()]
         return True
@@ -68,6 +69,9 @@ class SvnDumpEolFix:
         self.__out_file = ""
         # dry-run, do not create an output file
         self.__dry_run = True
+        # (do not) set eol-style on text files
+        self.__eol_style = None
+
         # temp files
         self.__temp_dir = "."
         self.__temp_file_max_nr = 0
@@ -108,9 +112,18 @@ class SvnDumpEolFix:
         self.__is_text_file = callback
         self.__is_text_file_params = parameter
 
+    def set_eol_style( self, eolstyle ):
+        """Enable/disable setting eol-style on text files.
+        
+            If eolstyle is None do not set svn:eol-style, else set it
+            to the given value."""
+        self.__eol_style = eolstyle
+
+
     def execute( self ):
         """Executes the EolFix."""
 
+        # +++ catch exception and return errorcode
         srcdmp = SvnDumpFile()
         srcdmp.open( self.__in_file )
 
@@ -158,6 +171,12 @@ class SvnDumpEolFix:
                                               self.__is_text_file_params )
             if istextfile and node.has_text():
                 node = self.__convert_eol( node )
+            # +++ is node.has_properties a good enough test?
+            # maybe i have to save the properties of each node and
+            # use them here?
+            if self.__eol_style != None and node.has_properties():
+                if istextfile:
+                    node.set_property( "svn:eol-style", self.__eol_style )
             if dstdmp != None:
                 dstdmp.add_node( node )
             index = index + 1
@@ -241,6 +260,11 @@ def svndump_eol_fix_cmdline( appname, args ):
 
     usage = "usage: %s [options] src dst" % appname
     parser = OptionParser( usage=usage, version="%prog 0.1" )
+    parser.add_option( "-E", "--eol-style",
+                       action="store", dest="eolstyle", default=None,
+                       type="choice", choices=[ "native", "LF", "CRLF", "CR" ],
+                       help="add svn:eol-style property to text files, "
+                            "the value can be 'native', 'LF', 'CRLF' or 'CR'" )
     parser.add_option( "-m", "--mode",
                        action="store", dest="mode", default="prop",
                        type="choice", choices=[ "prop", "regexp" ],
@@ -269,6 +293,8 @@ def svndump_eol_fix_cmdline( appname, args ):
         eolfix.set_mode_prop()
     elif options.mode == "regexp":
         eolfix.set_mode_regexp( options.regexp )
+    if options.eolstyle != None:
+        eolfix.set_eol_style( options.eolstyle )
 
     eolfix.execute()
     return 0
