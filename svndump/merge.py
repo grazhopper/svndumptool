@@ -167,17 +167,12 @@ class SvnDumpMerge:
                                         "svn:author" : self.__out_author,
                                         "svn:date" : oldestStr } )
             for dirName in self.__out_dirs:
-                node = SvnDumpNode( dirName )
-                node.set_action_add_dir( None )
+                node = SvnDumpNode( "dir", dirName )
+                node.set_action( "add" )
                 self.outDump.add_node( node )
 
         # loop over all revisions
-        #maxrev = 3
         while dumpCount > 0:
-            #print "XYX %d" % maxrev
-            #maxrev = maxrev - 1
-            #if maxrev == 0:
-            #  break
             # find index of the oldest revision
             oldestIndex = 0
             for index in range( 1, dumpCount ):
@@ -213,7 +208,6 @@ class SvnDumpMerge:
         while index < nodeCount:
             node = srcDump.get_node( index )
             newNode = self.__change_node( dumpIndex, node )
-            #self.addParentDirectories( newNode )
             if newNode != None:
                 self.outDump.add_node( newNode )
             index = index + 1
@@ -227,11 +221,9 @@ class SvnDumpMerge:
              creates a new node if the path changed, else returns the old node"""
 
         path = node.get_path()
-        #print "node '%s'" % path
         # mkdir exclude check
         if node.get_kind() == "dir" and node.get_action() == "add":
             if path in self.__in_excludes[dumpIndex]:
-                #print "   --> add dir"
                 return None
         fromPath = node.get_copy_from_path()
         fromRev = node.get_copy_from_rev()
@@ -254,28 +246,15 @@ class SvnDumpMerge:
             return node
 
         # do the rename
-        newNode = SvnDumpNode( newPath )
-        if node.get_kind() == "dir":
-            # directory
-            if node.get_action() == "add":
-                newNode.set_action_add_dir( node.get_properties(),
-                            newFromPath, newFromRev )
-            elif node.get_action() == "change":
-                newNode.set_action_change_dir( node.get_properties(),
-                            newFromPath, newFromRev )
-            else:
-                newNode.set_action_delete()
-        else:
-            # file
-            if node.get_action() == "add":
-                newNode.set_action_add_file_node( node.get_properties(),
-                            node, newFromPath, newFromRev )
-            elif node.get_action() == "change":
-                newNode.set_action_change_file_node( node.get_properties(),
-                            node, newFromPath, newFromRev )
-            else:
-                newNode.set_action_delete()
-
+        newNode = SvnDumpNode( newPath, node.get_kind() )
+        newNode.set_action( node.get_action() )
+        if node.has_copy_from():
+            newNode.set_copy_from( node.get_copy_from_path(),
+                                   node.get_copy_from_rev() )
+        if node.has_properties():
+            newNode.set_properties( node.get_properties() )
+        if node.has_text():
+            newNode.set_text_node( node )
         return newNode
 
     def __rename_path( self, path, renames ):
@@ -318,111 +297,6 @@ class SvnDumpMerge:
                 self.__in_dumps[index:eidx] = []
                 self.__in_rev_dates[index:eidx] = []
         return index
-
-# hackyhacky +++++
-
-def parseArgsAndExecute( args ):
-    """Parse arguments and execute.
-         - args: commandline arguments (without programname)"""
-
-    index = 0
-    argCount = len(args)
-    if argCount == 0:
-        usage()
-        return 0
-    merge = SvnDumpMerge()
-    fileIndex = -1
-    outFileSet = 0
-    logMsgSet = 0
-    while index < argCount:
-        if args[index] == "-i":
-            # add input file
-            i = index + 1
-            index = index + 2
-            if index > argCount:
-                print "missing parameter for option '-i filename'"
-                return 1
-            fileIndex = merge.set_input_file( args[i] )
-        elif args[index] == "-r":
-            # add rename
-            i = index + 1
-            index = index + 3
-            if index > argCount:
-                print "missing parameter(s) for option '-r from to'"
-                return 1
-            if fileIndex < 0:
-                print "before adding renames a file must be added"
-                return 1
-            merge.add_rename( fileIndex, args[i], args[i+1] )
-        elif args[index] == "-x":
-            # add exclude mkdir
-            i = index + 1
-            index = index + 2
-            if index > argCount:
-                print "missing parameter for option '-x dir'"
-                return 1
-            if fileIndex < 0:
-                print "before adding mkdir excludes a file must be added"
-                return 1
-            merge.add_mkdir_exclude( fileIndex, args[i] )
-        elif args[index] == "-o":
-            # add output file
-            i = index + 1
-            index = index + 2
-            if index > argCount:
-                print "missing parameter for option '-o filename'"
-                return 1
-            if outFileSet:
-                print "output file has allready been set"
-                return 1
-            merge.set_output_file( args[i] )
-            outFileSet = 1
-        elif args[index] == "-d":
-            # add additional directory
-            i = index + 1
-            index = index + 2
-            if index > argCount:
-                print "missing parameter for option '-d dirname'"
-                return 1
-            merge.add_directory( args[i] )
-        elif args[index] == "-m":
-            # set log message for additional dirs revision
-            i = index + 1
-            index = index + 2
-            if index > argCount:
-                print "missing parameter for option '-m message'"
-                return 1
-            if logMsgSet:
-                print "log message has allready been set"
-                return 1
-            merge.set_log_message( args[i] )
-            logMsgSet = 1
-        elif args[index] == "-h" or args[index] == "--help":
-            # help
-            usage()
-            return 0
-        elif args[index] == "-v" or args[index] == "--version":
-            # help
-            print __revision__
-            return 0
-        elif args[index] == "--example":
-            # show a usage example
-            example()
-            return 0
-        else:
-            # unknown option
-            print "unknown option '%s'!" % args[index]
-            print "use 'svndumpmerge.py -h' for help."
-            return 1
-    # now execute the merge
-    try:
-        merge.merge()
-    except:
-        print "caught exception while merging"
-        # how to output info of the exception ? +++++
-        #raise
-        return 2
-    return 0
 
 
 def __svndump_merge_opt_i( option, opt, value, parser, *args ):

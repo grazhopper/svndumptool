@@ -144,17 +144,19 @@ class SvnDumpFile:
         while line != "PROPS-END":
             # key
             words = line.split()
-            if len( words ) != 2 or words[0] != "K":
+            if len( words ) != 2 or (words[0] != "K" and words[0] != "D"):
                 raise SvnDumpException, "illegal proprty key ???"
             key = self.__read_bin( int(words[1]) )
             self.__skip_empty_line()
             # value
-            eof, line = self.__read_line( 1 )
-            words = line.split()
-            if len( words ) != 2 or words[0] != "V":
-                raise SvnDumpException, "illegal proprty value ???"
-            value = self.__read_bin( int(words[1]) )
-            self.__skip_empty_line()
+            value = None
+            if words[0] == "K":
+                eof, line = self.__read_line( 1 )
+                words = line.split()
+                if len( words ) != 2 or words[0] != "V":
+                    raise SvnDumpException, "illegal proprty value ???"
+                value = self.__read_bin( int(words[1]) )
+                self.__skip_empty_line()
             # set property
             props[key] = value
             # next line...
@@ -168,9 +170,14 @@ class SvnDumpFile:
         propStr = ""
         if properties != None:
             for key, val in properties.items():
-                propStr = propStr + "K " + ("%d"%len(key)) + "\n" + key + "\n"
-                propStr = propStr + "V " + ("%d"%len(val)) + "\n" + val + "\n"
-            propStr = propStr + "PROPS-END\n"
+                if val != None:
+                    # add/change property
+                    propStr = propStr + ("K %d"%len(key)) + "\n" + key + "\n"
+                    propStr = propStr + ("V %d"%len(val)) + "\n" + val + "\n"
+                else:
+                    # delete property
+                    propStr = propStr + ("D %d"%len(key)) + "\n" + key + "\n"
+        propStr = propStr + "PROPS-END\n"
         return propStr
 
 
@@ -344,9 +351,6 @@ class SvnDumpFile:
         # get rev tags
         tags = self.__get_tag_list()
         self.__rev_nr = int( tags["Revision-number:"] )
-        # these are not used
-        #self.propContLen = int( tags["Prop-content-length:"] )
-        #self.contLen = int( tags["Content-length:"] )
 
         # read revision properties
         self.__rev_props = self.__get_prop_list()
@@ -386,48 +390,18 @@ class SvnDumpFile:
                 offset = 0
             # add node
             path = tags["Node-path:"]
-            node = SvnDumpNode( path )
-            action = tags["Node-action:"]
-            if action == "delete":
-                node.set_action_delete()
-            elif action == "add" or action == "change" or action == "replace":
-                kind = tags["Node-kind:"]
-                if tags.has_key( "Node-copyfrom-path:" ):
-                    copypath = tags["Node-copyfrom-path:"]
-                    copyrev = int(tags["Node-copyfrom-rev:"])
-                else:
-                    copypath = ""
-                    copyrev = 0
-                if kind == "dir":
-                    if action == "add":
-                        node.set_action_add_dir( properties, copypath, copyrev )
-                    else:
-                        node.set_action_change_dir( properties, copypath, copyrev )
-                elif kind == "file":
-                    if tags.has_key( "Text-content-length:" ):
-                        textlen = tags["Text-content-length:"]
-                        textmd5 = tags["Text-content-md5:"]
-                    else:
-                        textlen = -1
-                        textmd5 = ""
-                    if action == "add":
-                        node.set_action_add_file_obj( properties, self.__file,
-                                offset, textlen, textmd5, copypath, copyrev )
-                    elif action == "change":
-                        node.set_action_change_file_obj( properties, self.__file,
-                                offset, textlen, textmd5, copypath, copyrev )
-                    else:
-                        node.set_action_replace_file_obj( properties, self.__file,
-                                offset, textlen, textmd5, copypath, copyrev )
-                else:
-                    print "unsupported node kind '%s' for action '%s'" % \
-                                ( kind, action )
-                    action = ""
-            else:
-                print "unsupported action '%s'" % ( action )
-                action = ""
-            if action != "":
-                self.__nodes = self.__nodes + [ node ]
+            node = SvnDumpNode( tags["Node-kind:"], path )
+            node.set_action( tags["Node-action:"] )
+            if properties != None:
+                node.set_properties( properties )
+            if tags.has_key( "Node-copyfrom-path:" ):
+                node.set_copy_from( tags["Node-copyfrom-path:"],
+                                    int(tags["Node-copyfrom-rev:"]) )
+            if tags.has_key( "Text-content-length:" ):
+                node.set_text_fileobj( self.__file, offset,
+                                       int(tags["Text-content-length:"]),
+                                       tags["Text-content-md5:"] )
+            self.__nodes.append( node )
             # next one...
             tags = self.__get_tag_list()
 
@@ -584,7 +558,7 @@ class SvnDumpFile:
             # write text
             if node.has_text():
                 node.write_text_to_file( self.__file )
-                self.__file.write( "\n" )
+            self.__file.write( "\n" )
         # CR after each node
         self.__file.write( "\n" )
 

@@ -20,20 +20,31 @@
 #
 #===============================================================================
 
+from os import stat
+from stat import ST_SIZE
+import md5
+
 from common import *
 
 class SvnDumpNode:
     """A node of a svn dump file."""
 
-    def __init__( self, path ):
-        """init function.
+    def __init__( self, kind, path ):
+        """Init method.
+
+            - kind: kind of the node (file or dir)
             - path: path of the node"""
+
+        # check kind
+        if kind != "file" and kind != "dir":
+            raise SvnDumpException, "Unknown kind '%s'" % kind
+        # check path +++
         # path of this node relative to the repository root
         self.__path = path
         # action: 'add', 'change', 'delete' or 'replace'
         self.__action = ""
         # kind: 'file', 'dir' or 'node' if not known
-        self.__kind = ""
+        self.__kind = kind
         # list of properties name=>value pairs
         self.__properties = None
         # length of the text (file data)
@@ -48,8 +59,16 @@ class SvnDumpNode:
         self.__file_offset = -1
         # name of the (temp) file
         self.__file_name = ""
+        # delete the temp file
+        self.__file_delete = False
         # the file object to read from
         self.__file_obj = None
+
+    def __del__( self ):
+        """Delete method, cleanup temp file if needed."""
+        if self.__file_delete and self.__file_name != "":
+            # delete temp file ++++
+            pass
 
     def get_path( self ):
         """Returns the path of this node."""
@@ -64,6 +83,17 @@ class SvnDumpNode:
     def get_kind( self ):
         """Returns the kind of this node ('file', 'dir' or 'node')."""
         return self.__kind
+
+    def get_property( self, name ):
+        """Returns the property."""
+        if self.__properties.has_key( name ):
+            return self.__properties[key]
+        else:
+            return None
+
+    def has_properties( self ):
+        """Returns True if this node has properties."""
+        return self.__properties != None
 
     def get_properties( self ):
         """Returns the properties."""
@@ -81,6 +111,10 @@ class SvnDumpNode:
         """Returns the MD5 hash of the text."""
         return self.__text_md5
 
+    def has_copy_from( self ):
+        """Returns True when this node has copy-from-path and copy-from-rev."""
+        return self.__copy_from_rev > 0 and self.__copy_from_path != ""
+
     def get_copy_from_path( self ):
         """Returns the path the node has been copied from or an empty string."""
         return self.__copy_from_path
@@ -89,209 +123,128 @@ class SvnDumpNode:
         """Returns the revision the node has been copied from or zero."""
         return self.__copy_from_rev
 
-    def set_action_delete( self ):
-        """Sets the action of this node to 'delete'."""
-        self.__action = "delete"
-        self.__kind = "node"
+    def set_action( self, action ):
+        """Set the action of this node.
+        
+            - action: one of 'add', 'delete', 'change' or 'replace'"""
 
-    def set_action_add_dir( self, properties, fromPath="", fromRev=0 ):
-        """Add a directory.
-            - properties: a dict containing properties (name/value pairs)
-            - fromPath (opt): the path the node has been copied from
-            - fromRev (opt): the revision the node has been copied from or zero"""
+        if self.__action != "":
+            raise SvnDumpException, "Action cannot be changed."
+        if action != "add" and action != "delete" and \
+           action != "change" and action != "replace":
+            raise SvnDumpException, "Unknown action '%s'." % action
+        self.__action = action
 
-        self.__action = "add"
-        self.__kind = "dir"
+    def set_copy_from( self, path, revnr ):
+        """Sets copy-from-path and copy-from-rev.
+        
+            - path:     copy-from-path
+            - revnr:    copy-from-rev"""
+
+        if self.__action != "add" and self.__action != "replace":
+            raise SvnDumpException, "Cannot set copy-from for action '%s'" \
+                    % self.__action
+        self.__copy_from_path = path
+        self.__copy_from_rev = revnr
+
+    def set_property( self, name, value ):
+        """Sets a property for this node.
+
+            - name:     property name
+            - value:    property value"""
+
+        if self.__action == "" or self.__action == "delete":
+            raise SvnDumpException, "Cannot set properties for action '%s'" \
+                    % self.__action
+        if self.__properties == None:
+            self.__properties = {}
+        self.__properties[name] = value
+
+    def del_property( self, name ):
+        """Deletes a property for this node.
+
+            - name:     property name"""
+
+        if self.__action == "" or self.__action == "delete":
+            raise SvnDumpException, "Cannot delete properties for action '%s'" \
+                    % self.__action
+        if self.__properties != None:
+            if self.__properties.has_key( name ):
+                del self.__properties[name]
+                if len( self.__properties ) == 0:
+                    self.__properties = None
+
+    def set_properties( self, properties ):
+        """Sets the properties for this node.
+
+            - properties:   a dict containing the properties"""
+
+        if self.__action == "" or self.__action == "delete":
+            raise SvnDumpException, "Cannot set properties for action '%s'" \
+                    % self.__action
         self.__properties = properties
-        self.__copy_from_path = fromPath
-        self.__copy_from_rev = fromRev
 
-    def set_action_change_dir( self, properties, fromPath="", fromRev=0 ):
-        """Change a directory.
-            - properties: a dict containing properties (name/value pairs)
-            - fromPath (opt): the path the node has been copied from
-            - fromRev (opt): the revision the node has been copied from or zero"""
+    def set_text_file( self, filename, length=-1, md5="", delete=False ):
+        """Sets the text for this node.
 
-        self.__action = "change"
-        self.__kind = "dir"
-        self.__properties = properties
-        self.__copy_from_path = fromPath
-        self.__copy_from_rev = fromRev
+            The text will be read from the specified file.
+            - filename:     name of the file
+            - length:       length of the file
+            - md5:          md5 sum of the text
+            - delete:       if true delete the file"""
 
-    def set_action_add_file_obj( self, properties, fileObj, offset, length, md5,
-                             fromPath="", fromRev=0 ):
-        """Change a file from the given file object.
-            - properties: a dict containing properties (name/value pairs)
-            - fileObj:    a file object
-            - offset:     offset of the file in the file object
-            - length:     length of the file
-            - md5:        md5 of the file or empty string if unknown
-            - fromPath (opt): the path the node has been copied from
-            - fromRev (opt): the revision the node has been copied from or zero"""
-
-        self.__action = "add"
-        self.__kind = "file"
-        self.__properties = properties
-        self.__file_obj = fileObj
-        self.__file_offset = offset
-        self.__text_len = length
-        self.__copy_from_path = fromPath
-        self.__copy_from_rev = fromRev
-        if is_valid_md5_string( md5 ):
-            self.__text_md5 = md5
-
-    def set_action_add_file_name( self, properties, filename, length, md5,
-                             fromPath="", fromRev=0 ):
-        """Change a file from the given file object.
-            - properties: a dict containing properties (name/value pairs)
-            - fileObj:    a file object
-            - length:     length of the file
-            - md5:        md5 of the file or empty string if unknown
-            - fromPath (opt): the path the node has been copied from
-            - fromRev (opt): the revision the node has been copied from or zero"""
-
-        self.__action = "add"
-        self.__kind = "file"
-        self.__properties = properties
+        if self.__action == "" or self.__action == "delete":
+            raise SvnDumpException, "Cannot set text for action '%s'" \
+                    % self.__action
         self.__file_name = filename
         self.__file_offset = 0
+        # hmm, no destructors, how to delete that damn temp file ? +++
+        self.__file_delete = delete
+        if length == -1:
+            length = stat( filename )[ST_SIZE]
         self.__text_len = length
-        self.__copy_from_path = fromPath
-        self.__copy_from_rev = fromRev
-        if is_valid_md5_string( md5 ):
-            self.__text_md5 = md5
-        else:
+        self.__text_md5 = md5
+        if not is_valid_md5_string( md5 ):
             self.__calculate_md5()
 
-    def set_action_add_file_node( self, properties, node, fromPath="", fromRev=0 ):
-        """Change a file from the given file object.
-            - properties: a dict containing properties (name/value pairs)
-            - node:       an existing node
-            - fromPath (opt): the path the node has been copied from
-            - fromRev (opt): the revision the node has been copied from or zero"""
+    def set_text_fileobj( self, fileobj, offset, length, md5 ):
+        """Sets the text for this node.
 
-        self.__action = "add"
-        self.__kind = "file"
-        self.__properties = properties
-        self.__file_obj = node.fileObj
-        self.__file_offset = node.fileOffset
-        self.__file_name = node.fileName
-        self.__text_len = node.textLen
-        self.__text_md5 = node.textMD5
-        self.__copy_from_path = fromPath
-        self.__copy_from_rev = fromRev
+            The text will be read from the specified file.
+            - fileobj:      a file object containing the text
+            - offset:       offset of the text
+            - length:       length of the text
+            - md5:          md5 sum of the text"""
 
-    def set_action_change_file_obj( self, properties, fileObj, offset, length, md5,
-                                fromPath="", fromRev=0 ):
-        """Add a file from the given file object.
-            - properties: a dict containing properties (name/value pairs)
-            - fileObj:    a file object
-            - offset:     offset of the file in the file object
-            - length:     length of the file
-            - md5:        md5 of the file or empty string if unknown
-            - fromPath (opt): the path the node has been copied from
-            - fromRev (opt): the revision the node has been copied from or zero"""
-
-        self.__action = "change"
-        self.__kind = "file"
-        self.__properties = properties
-        self.__file_obj = fileObj
+        if self.__action == "" or self.__action == "delete":
+            raise SvnDumpException, "Cannot set text for action '%s'" \
+                    % self.__action
+        self.__file_obj = fileobj
         self.__file_offset = offset
         self.__text_len = length
-        self.__copy_from_path = fromPath
-        self.__copy_from_rev = fromRev
-        if is_valid_md5_string( md5 ):
-            self.__text_md5 = md5
+        self.__text_md5 = md5
+        #if !is_valid_md5_string( md5 ) or length == -1:
+        #    self.__calculate_md5()
 
-    def set_action_change_file_name( self, properties, filename, length, md5,
-                                fromPath="", fromRev=0 ):
-        """Add a file from the given file object.
-            - properties: a dict containing properties (name/value pairs)
-            - fileObj:    a file object
-            - length:     length of the file
-            - md5:        md5 of the file or empty string if unknown
-            - fromPath (opt): the path the node has been copied from
-            - fromRev (opt): the revision the node has been copied from or zero"""
+    def set_text_node( self, node ):
+        """Sets the text for this node.
 
-        self.__action = "change"
-        self.__kind = "file"
-        self.__properties = properties
-        self.__file_name = filename
-        self.__file_offset = 0
-        self.__text_len = length
-        self.__copy_from_path = fromPath
-        self.__copy_from_rev = fromRev
-        if is_valid_md5_string( md5 ):
-            self.__text_md5 = md5
-        else:
-            self.__calculate_md5()
+            The text will be set from the specified file.
+            - node:         a node"""
 
-    def set_action_change_file_node( self, properties, node,
-                                 fromPath="", fromRev=0 ):
-        """Add a file from the given file object.
-            - properties: a dict containing properties (name/value pairs)
-            - node:       an existing node
-            - fromPath (opt): the path the node has been copied from
-            - fromRev (opt): the revision the node has been copied from or zero"""
-
-        self.__action = "change"
-        self.__kind = "file"
-        self.__properties = properties
-        self.__file_obj = node.fileObj
-        self.__file_offset = node.fileOffset
-        self.__file_name = node.fileName
-        self.__text_len = node.textLen
-        self.__text_md5 = node.textMD5
-        self.__copy_from_path = fromPath
-        self.__copy_from_rev = fromRev
-
-    def set_action_replace_file_obj( self, properties, fileObj, offset, length, md5,
-                                fromPath="", fromRev=0 ):
-        """Replace a file from the given file object.
-            - properties: a dict containing properties (name/value pairs)
-            - fileObj:    a file object
-            - offset:     offset of the file in the file object
-            - length:     length of the file
-            - md5:        md5 of the file or empty string if unknown
-            - fromPath (opt): the path the node has been copied from
-            - fromRev (opt): the revision the node has been copied from or zero"""
-
-        self.__action = "replace"
-        self.__kind = "file"
-        self.__properties = properties
-        self.__file_obj = fileObj
-        self.__file_offset = offset
-        self.__text_len = length
-        self.__copy_from_path = fromPath
-        self.__copy_from_rev = fromRev
-        if is_valid_md5_string( md5 ):
-            self.__text_md5 = md5
-
-    def set_action_replace_file_name( self, properties, filename, length, md5,
-                                fromPath="", fromRev=0 ):
-        """Replace a file from the given file object.
-            - properties: a dict containing properties (name/value pairs)
-            - fileObj:    a file object
-            - length:     length of the file
-            - md5:        md5 of the file or empty string if unknown
-            - fromPath (opt): the path the node has been copied from
-            - fromRev (opt): the revision the node has been copied from or zero"""
-
-        self.__action = "replace"
-        self.__kind = "file"
-        self.__properties = properties
-        self.__file_name = filename
-        self.__file_offset = 0
-        self.__text_len = length
-        self.__copy_from_path = fromPath
-        self.__copy_from_rev = fromRev
-        if is_valid_md5_string( md5 ):
-            self.__text_md5 = md5
-        else:
-            self.__calculate_md5()
+        if self.__action == "" or self.__action == "delete":
+            raise SvnDumpException, "Cannot set text for action '%s'" \
+                    % self.__action
+        self.__file_name = node.__file_name
+        # dunno how to delete temp file so no special action here +++
+        self.__file_delete = node.__file_delete
+        self.__file_obj = node.__file_obj
+        self.__file_offset = node.__file_offset
+        self.__text_len = node.__text_len
+        self.__text_md5 = node.__text_md5
 
     def write_text_to_file( self, outfile ):
-        """Writes the text to the given file."""
+        """Writes the text to the given file obj."""
 
         if self.__text_len == -1:
             raise SvnDumpException, "Node %s has no text" % self.__path
@@ -347,7 +300,7 @@ class SvnDumpNode:
 
         # end of text ?
         if handle["pos"] >= handle["length"]:
-            return None
+            return ""
 
         # is more text requested than remains
         if (handle["pos"] + count) > handle["length"]:
@@ -369,59 +322,13 @@ class SvnDumpNode:
         handle = self.text_open()
         md = md5.new()
         data = self.text_read( handle )
-        while data != None:
+        n = 0
+        while len(data) > 0:
+            n = n + len(data)
             md.update( data )
             data = self.text_read( handle )
         self.__text_md5 = md.hexdigest()
+        if self.__text_len == -1:
+            self.__text_len = n
         self.text_close( handle )
 
-#    def convert_eol_hack( self, outfilename ):
-#        """Writes the text to the given file and converts EOL to LF.
-#        
-#            This is a hack! should be redesigned!"""
-#
-#        # ++++ hack, delete should also have textLen -1
-#        if self.__action == "delete":
-#            return False
-#        if self.__text_len == -1:
-#            # no text so nothing to convert
-#            return False
-#        if len(self.__file_name) > 0:
-#            # conversion allready done
-#            return False
-#        # check the file
-#        self.__file_obj.seek( self.__file_offset )
-#        cnt = self.__text_len
-#        needsFix = False
-#        while cnt > 0:
-#            bcnt = cnt
-#            if bcnt > 16384:
-#                bcnt = 16384
-#            str = self.__file_obj.read( bcnt )
-#            if str.find( "\r" ) >= 0:
-#                needsFix = True
-#                break
-#            cnt = cnt - bcnt
-#        if not needsFix:
-#            return False
-#        # convert the file
-#        self.__file_obj.seek( self.__file_offset )
-#        cnt = self.__text_len
-#        outfile = open( outfilename, "w+" )
-#        md = md5.new()
-#        while cnt > 0:
-#            bcnt = cnt
-#            if bcnt > 16384:
-#                bcnt = 16384
-#            str = self.__file_obj.read( bcnt ).replace( "\r\n", "\n" ).replace( "\r", "\n" )
-#            md.update( str )
-#            outfile.write( str )
-#            cnt = cnt - bcnt
-#        self.__text_len = outfile.tell()
-#        self.__text_md5 = md.hexdigest()
-#        self.__file_offset = 0
-#        self.__file_obj = None
-#        self.__file_name = outfilename
-#        outfile.close()
-#        return True
-#

@@ -138,7 +138,7 @@ class SvnDumpEolFix:
         need_conv = False
         handle = node.text_open()
         data = node.text_read( handle )
-        while data != None:
+        while len(data) > 0:
             if data.find( "\r" ) != -1:
                 # found one, need to convert the file
                 need_conv = True
@@ -160,7 +160,7 @@ class SvnDumpEolFix:
             md = md5.new()
             data = node.text_read( handle )
             carry = ""
-            while data != None:
+            while len(data) > 0:
                 if len(carry) != 0:
                     data = carry + data
                 n = len( data ) - 1
@@ -178,21 +178,14 @@ class SvnDumpEolFix:
                 outfile.write( "\n" )
                 outlen = outlen + 1
             outfile.close()
-            newnode = SvnDumpNode()
-            if node.get_action() == "add":
-                newnode.set_action_add_file_name(
-                        node.get_props(), outfilename, outlen, md.hexdigest(),
-                        node.get_copy_from_path(), node.get_copy_from_rev() )
-            elif node.get_action() == "change":
-                newnode.set_action_change_file_name(
-                        node.get_props(), outfilename, outlen, md.hexdigest(),
-                        node.get_copy_from_path(), node.get_copy_from_rev() )
-            elif node.get_action() == "replace":
-                newnode.set_action_replace_file_name(
-                        node.get_props(), outfilename, outlen, md.hexdigest(),
-                        node.get_copy_from_path(), node.get_copy_from_rev() )
-            else:
-                raise SvnDumpException, "unknown action"
+            newnode = SvnDumpNode( node.get_kind(), node.get_path() )
+            newnode.set_action( node.get_action() )
+            if node.has_copy_from():
+                newNode.set_copy_from( node.get_copy_from_path(),
+                                       node.get_copy_from_rev() )
+            if node.has_properties():
+                newNode.set_properties( node.get_properties() )
+            newNode.set_text_file( outfilename, outlen, md.hexdigest() )
         else:
             newnode = node
 

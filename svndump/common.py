@@ -20,6 +20,8 @@
 #
 #===============================================================================
 
+import time
+
 # perhaps some of these date functions can be replaced by
 # functions provided by the svn python bindings +++++
 # <sussman> it's our own string format, in libsvn_subr/time.c
