@@ -418,6 +418,7 @@ class SvnDumpDiff:
                 if self.__check_eol:
                     # start doing eol checks
                     cmpmode = 1
+                    forceloop = True
                 else:
                     # no eol check so files differ
                     cmpmode = 2
