@@ -73,9 +73,14 @@ class SvnDumpEolFix:
         self.__eol_style = None
         # fix types
         self.__fix = 0
+        # fix types for rev/path pairs
+        self.__fix_rev_path = {}
+        # warning file obj
+        self.__warning_file = None
+        # temp directory
+        self.__temp_dir = "./"
 
         # temp files
-        self.__temp_dir = "."
         self.__temp_file_max_nr = 0
         self.__temp_file_nr = 0
 
@@ -128,15 +133,51 @@ class SvnDumpEolFix:
             valid values are:
              'CRLF'   replace CRLF by LF
              'CR'     replace CR by LF
-             'DelCR'  remove CR"""
-        self.__fix = 0
-        for f in fix.split( ',' ):
+             'RemCR'  remove CR"""
+        self.__fix = self.__parse_fix_option( fix )
+
+    def set_fix_for_rev_file( self, fixrevfile ):
+        """Set what to fix for a given revision/file.
+
+            fixrevpath is a string containing colon separated the
+            fix option, revsision number and path of a file."""
+        parts = fixrevfile.split( ":", 2 )
+        if len( parts ) != 3:
+            print "wrong number of fiels for fixrevfile option."
+            return
+        key = ( int( parts[1] ), parts[2] )
+        self.__fix_rev_path[key] = self.__parse_fix_option( parts[0] )
+        print key, self.__fix_rev_path[key]
+
+    def __parse_fix_option( self, fixstr ):
+        """Parses a string containing comma separated fix options."""
+        fix = 0
+        for f in fixstr.split( ',' ):
             if f == "CRLF":
-                self.__fix |= 1
+                fix |= 1
             elif f == "CR":
-                self.__fix |= 2
-            elif f == "DelCR":
-                self.__fix |= 4
+                fix |= 2
+            elif f == "RemCR":
+                fix |= 4
+        return fix
+
+    def set_warning_file( self, warnfile ):
+        """Sets the filename for writing warnings into."""
+        if self.__warning_file != None:
+            self.__warning_file.close()
+        self.__warning_file = open( warnfile )
+        self.__warning_file.write( "#/bin/sh\n" )
+        self.__warning_file.write( "\n" )
+        self.__warning_file.write( "SVN=svn\n" )
+        self.__warning_file.write( "TMP=tmp\n" )
+        self.__warning_file.write( "REPOS=file:///tmp/repos\n" )
+        self.__warning_file.write( "\n" )
+
+    def set_temp_dir( self, tmpdir ):
+        """Sets the the directory for temporary files."""
+        if tmpdir[-1] != "/":
+            tmpdir += "/"
+        self.__temp_dir = tmpdir
 
     def execute( self ):
         """Executes the EolFix."""
@@ -188,7 +229,7 @@ class SvnDumpEolFix:
             istextfile = self.__is_text_file( srcdmp, node,
                                               self.__is_text_file_params )
             if istextfile and node.has_text():
-                node = self.__convert_eol( node )
+                node = self.__convert_eol( node, srcdmp.get_rev_nr() )
             # +++ is node.has_properties a good enough test?
             # maybe i have to save the properties of each node and
             # use them here?
@@ -199,7 +240,7 @@ class SvnDumpEolFix:
                 dstdmp.add_node( node )
             index = index + 1
 
-    def __convert_eol( self, node ):
+    def __convert_eol( self, node, revnr ):
         """Convert EOL of a node"""
 
         if node.get_text_length == -1:
@@ -217,10 +258,15 @@ class SvnDumpEolFix:
                 need_conv = True
                 break
             data = node.text_read( handle )
+        fix = self.__fix
         if need_conv:
-            print "    is_text, convert"
-            if self.__dry_run:
-                # do not convert with --dry-run
+            # special fix option for rev/file ?
+            key = ( revnr, node.get_path() )
+            if self.__fix_rev_path.has_key( key ):
+                fix = self.__fix_rev_path[key]
+            print "    is_text, convert (fix option %d)" % fix
+            if self.__dry_run or fix == 0:
+                # do not convert with --dry-run or when there's nothing to fix
                 need_conv = False
         else:
             print "    is_text"
@@ -233,7 +279,7 @@ class SvnDumpEolFix:
             md = md5.new()
             data = node.text_read( handle )
             carry = ""
-            cr_warning = False
+            warning_printed = False
             while len(data) > 0:
                 if len(carry) != 0:
                     data = carry + data
@@ -243,24 +289,37 @@ class SvnDumpEolFix:
                     data = data[:n]
                 else:
                     carry = ""
-                #data = data.replace( "\r\n", "\n" ).replace( "\r", "\n" )
-                if self.__fix & 1 != 0:
+                if fix & 1 != 0:
                     data = data.replace( "\r\n", "\n" )
-                if self.__fix & 2 != 0:
+                if fix & 2 != 0:
                     data = data.replace( "\r", "\n" )
-                if self.__fix & 4 != 0:
+                if fix & 4 != 0:
                     data = data.replace( "\r", "" )
-                if not cr_warning and data.find( "\r" ) >= 0:
-                    cr_warning = True
+                if not warning_printed and data.find( "\r" ) >= 0:
+                    warning_printed = True
                     print "    WARNING: file still contains CR"
                     print "      file: '%s'" % node.get_path()
+                    if self.__warning_file != None:
+                        self.__warning_file.write(
+                                "# WARNING: file still contains CR\n" )
+                        file = node.get_path()
+                        while file[0] == "/":
+                            file = file[1:]
+                        tmpfile = file.replace( "/", "__" )
+                        cmd = '$SVN cat -r %d "$REPOS/%s" > "%s"\n' % \
+                            ( revnr, node.get_path(), tmpfile )
+                        self.__warning_file.write( cmd )
                 md.update( data )
                 outfile.write( data )
                 outlen = outlen + len( data )
                 data = node.text_read( handle )
             if len( carry ) != 0:
-                outfile.write( "\n" )
-                outlen = outlen + 1
+                if fix & 2 != 0:
+                    outfile.write( "\n" )
+                    outlen = outlen + 1
+                elif fix & 4 == 0:
+                    outfile.write( carry )
+                    outlen = outlen + 1
             outfile.close()
             newnode = SvnDumpNode( node.get_path(), node.get_action(),
                                    node.get_kind() )
@@ -281,7 +340,7 @@ class SvnDumpEolFix:
         self.__temp_file_nr = self.__temp_file_nr + 1
         if self.__temp_file_nr > self.__temp_file_max_nr:
             self.__temp_file_max_nr = self.__temp_file_nr
-        return "%s/tmpnode%d" % ( self.__temp_dir, self.__temp_file_nr )
+        return "%stmpnode%d" % ( self.__temp_dir, self.__temp_file_nr )
 
 
 def svndump_eol_fix_cmdline( appname, args ):
@@ -299,10 +358,15 @@ def svndump_eol_fix_cmdline( appname, args ):
                        type="string", default="CRLF",
                        help="a comma separated list of what (and how) to fix, "
                             "can be a combination of "
-                            "'CRLF', 'CR' and 'DelCR'. If 'CR' and 'DelCR' "
-                            "both specified 'DelCR' is ignored. 'CRLF' and "
-                            "'CR' mean replace them by LF, 'DelCR' means "
+                            "'CRLF', 'CR' and 'RemCR'. If 'CR' and 'RemCR' "
+                            "both specified 'RemCR' is ignored. 'CRLF' and "
+                            "'CR' mean replace them by LF, 'RemCR' means "
                             "remove CR's." )
+    parser.add_option( "-F", "--fix-rev-path",
+                       action="append", dest="fixrevpath",
+                       type="string",
+                       help="a colon separated list of fix option, revision "
+                            "number and path of a file." )
     parser.add_option( "-m", "--mode",
                        action="store", dest="mode", default="prop",
                        type="choice", choices=[ "prop", "regexp" ],
@@ -311,6 +375,14 @@ def svndump_eol_fix_cmdline( appname, args ):
     parser.add_option( "-r", "--regexp",
                        action="append", dest="regexp",
                        help="regexp for matching text file names" )
+    parser.add_option( "-t", "--temp-dir",
+                       action="store", dest="tmpdir",
+                       type="string",
+                       help="directory for temporary files." )
+    parser.add_option( "-w", "--warn-file",
+                       action="store", dest="warnfile",
+                       type="string",
+                       help="file for storing the warnings." )
     parser.add_option( "--dry-run",
                        action="store_true", dest="dry_run", default=False,
                        help="just show what would be done but don't do it" )
@@ -331,6 +403,13 @@ def svndump_eol_fix_cmdline( appname, args ):
     if options.eolstyle != None:
         eolfix.set_eol_style( options.eolstyle )
     eolfix.set_fix_options( options.fix )
+    if options.fixrevpath != None:
+        for f in options.fixrevpath:
+            eolfix.set_fix_for_rev_file( f )
+    if options.tmpdir != None:
+        eolfix.set_temp_dir( options.tmpdir )
+    if options.warnfile != None:
+        eolfix.set_warning_file( options.warnfile )
 
     eolfix.execute()
     return 0
