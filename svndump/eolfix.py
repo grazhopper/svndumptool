@@ -232,7 +232,7 @@ class SvnDumpEolFix:
         """
         if self.__warning_file != None:
             self.__warning_file.close()
-        self.__warning_file = open( warnfile )
+        self.__warning_file = open( warnfile, "w" )
         self.__warning_file.write( "#/bin/sh\n" )
         self.__warning_file.write( "\n" )
         self.__warning_file.write( "SVN=svn\n" )
@@ -364,7 +364,7 @@ class SvnDumpEolFix:
             # do the conversion
             node.text_reopen( handle )
             outfilename = self.__temp_file_name()
-            outfile = open( outfilename, "w+" )
+            outfile = open( outfilename, "wb" )
             outlen = 0
             md = md5.new()
             data = node.text_read( handle )
