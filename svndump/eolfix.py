@@ -24,6 +24,7 @@ from optparse import OptionParser
 import re
 import md5
 
+from svndump import __version
 from file import SvnDumpFile
 from node import SvnDumpNode
 
@@ -455,7 +456,7 @@ def svndump_eol_fix_cmdline( appname, args ):
     """
 
     usage = "usage: %s [options] src [dst]" % appname
-    parser = OptionParser( usage=usage, version="%prog 0.1" )
+    parser = OptionParser( usage=usage, version="%prog "+__version )
     parser.add_option( "-E", "--eol-style",
                        action="store", dest="eolstyle", default=None,
                        type="choice", choices=[ "native", "LF", "CRLF", "CR" ],

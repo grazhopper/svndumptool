@@ -23,6 +23,7 @@
 
 import sys
 
+from svndump import __version
 from svndump.diff import svndump_diff_cmdline
 from svndump.merge import svndump_merge_cmdline
 from svndump.eolfix import svndump_eol_fix_cmdline
@@ -35,6 +36,7 @@ def help( x ):
     print "    diff         show differences between two dump files"
     print "    eolfix       fix EOL of text files in a dump"
     print "    merge        merge dump files"
+    print "    --version    print the version"
     print ""
     print "  use 'svndumptool.py command -h' for help about the commands."
     print ""
@@ -59,6 +61,9 @@ if __name__ == '__main__':
             func = svndump_eol_fix_cmdline
         elif args[0] == "diff":
             func = svndump_diff_cmdline
+        elif args[0] == "--version":
+            print appname + " " + __version
+            sys.exit( 0 )
         else:
             help( args[0] )
         appname = appname + " " + args[0]

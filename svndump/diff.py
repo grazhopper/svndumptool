@@ -23,6 +23,7 @@
 import md5
 from optparse import OptionParser
 
+from svndump import __version
 from file import SvnDumpFile
 
 __doc__ = """Diff functions and classes."""
@@ -811,7 +812,7 @@ def svndump_diff_cmdline( appname, args ):
     """
 
     usage = "usage: %s [options] dump1 dump2" % appname
-    parser = OptionParser( usage=usage, version="%prog 0.1" )
+    parser = OptionParser( usage=usage, version="%prog "+__version )
     parser.add_option( "-e", "--check-eol",
                        action="store_const", dest="eol", const=1, default=0,
                        help="check for EOL differences" )

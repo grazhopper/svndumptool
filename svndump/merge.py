@@ -23,6 +23,7 @@
 import sys
 from optparse import OptionParser
 
+from svndump import __version
 from file import SvnDumpFile
 
 __doc__ = """Clases and functions for merging dump files."""
@@ -450,7 +451,7 @@ def svndump_merge_cmdline( appname, args ):
     """
 
     usage = "usage: %s [options]" % appname
-    parser = OptionParser( usage=usage, version="%prog 0.1" )
+    parser = OptionParser( usage=usage, version="%prog "+__version )
     merge = SvnDumpMerge()
     vars = {}
     vars["fileIndex"] = -1
