@@ -149,8 +149,8 @@ class SvnDumpNode:
         """
         Returns the properties as a dict.
 
-        @rtype: 
-        @return: 
+        @rtype: dict( string -> string )
+        @return: The properties of this node.
         """
         return self.__properties
 
@@ -165,7 +165,7 @@ class SvnDumpNode:
 
     def get_text_length( self ):
         """
-        Returns the lenght of the text.
+        Returns the length of the text.
 
         @rtype: integer
         @return: Length of the text.
