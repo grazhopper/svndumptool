@@ -554,14 +554,14 @@ class SvnDumpFile:
                 self.__file.write( "Text-content-md5: %s\n" % node.get_text_md5() )
             if proplen > 0 or node.has_text():
                 self.__file.write( "Content-length: %d\n" % totlen )
-            self.__file.write( "\n" )
+                self.__file.write( "\n" )
             # write properties
             if proplen > 0:
                 self.__file.write( propstr )
             # write text
             if node.has_text():
                 node.write_text_to_file( self.__file )
-                self.__file.write( "\n" )
+            self.__file.write( "\n" )
         # CR after each node
         self.__file.write( "\n" )
 
