@@ -21,8 +21,41 @@
 #===============================================================================
 
 from optparse import OptionParser
+import re
+import md5
 
 from file import SvnDumpFile
+from node import SvnDumpNode
+
+def eolfix_callback_prop( dumpfile, node, textfiles ):
+    """Check for property and do conversion if needed."""
+
+    # do we allready know that it is a textfile ?
+    if textfiles.has_key( node.get_path() ):
+        if node.get_action() == "delete":
+            del textfiles[node.get_path()]
+        return True
+
+    # handle copy-from-path ??? +++
+
+    # check properties
+    properties = node.get_properties()
+    if properties == None:
+        return False
+    if not properties.has_key("svn:eol-style"):
+        return False
+
+    # is a text file, add to the list
+    textfiles[node.get_path()] = dumpfile.get_rev_nr()
+    return True
+
+def eolfix_callback_regexp( dumpfile, node, expressions ):
+    """Check regexp list and do conversion if needed."""
+
+    for re in expressions:
+        if re.search( node.get_path() ) != None:
+            return True
+    return False
 
 class SvnDumpEolFix:
     """A class for fixing mixed EOL style files in a svn dump file."""
@@ -47,13 +80,14 @@ class SvnDumpEolFix:
     def set_output_file( self, filename ):
         """Sets the output dump file name and clears the dry-run flag."""
         self.__out_file = filename
+        self.__dry_run = False
 
     def set_mode_prop( self ):
         """Sets mode to 'prop'.
 
             in this mode SvnDumpEolFix assumes text files have the property
             svn:eol-style set."""
-        self.__is_text_file = self.__callback_prop
+        self.__is_text_file = eolfix_callback_prop
         self.__is_text_file_params = {}
 
     def set_mode_regexp( self, expressions ):
@@ -61,7 +95,7 @@ class SvnDumpEolFix:
 
             In this mode every file which matches at least one of the regexps
             is treated as text file."""
-        self.__is_text_file = self.__callback_regexp
+        self.__is_text_file = eolfix_callback_regexp
         self.__is_text_file_params = []
         for expr in expressions:
             self.__is_text_file_params.append( re.compile( expr ) )
@@ -88,14 +122,16 @@ class SvnDumpEolFix:
                 dstdmp = SvnDumpFile()
                 if srcdmp.get_rev_nr() == 0:
                     # create new dump with revision 0
-                    dstdmp.create_with_rev_0( dstfile, srcdmp.get_uuid(),
-                                srcdmp.get_rev_date_str() )
+                    dstdmp.create_with_rev_0( self.__out_file,
+                                              srcdmp.get_uuid(),
+                                              srcdmp.get_rev_date_str() )
                     hasrev = srcdmp.read_next_rev()
                 else:
                     # create new dump starting with the same revNr
                     # as the input dump file
-                    dstdmp.create_with_rev_n( dstfile, srcdmp.get_uuid(),
-                                srcdmp.get_rev_nr() )
+                    dstdmp.create_with_rev_n( self.__out_file,
+                                              srcdmp.get_uuid(),
+                                              srcdmp.get_rev_nr() )
             # now copy all the revisions
             while hasrev:
                 print "\n\n*** r%d ***\n" % srcdmp.get_rev_nr()
@@ -180,13 +216,12 @@ class SvnDumpEolFix:
             outfile.close()
             newnode = SvnDumpNode( node.get_path(), node.get_action(),
                                    node.get_kind() )
-            newnode.set_action( node.get_action() )
             if node.has_copy_from():
-                newNode.set_copy_from( node.get_copy_from_path(),
+                newnode.set_copy_from( node.get_copy_from_path(),
                                        node.get_copy_from_rev() )
             if node.has_properties():
-                newNode.set_properties( node.get_properties() )
-            newNode.set_text_file( outfilename, outlen, md.hexdigest() )
+                newnode.set_properties( node.get_properties() )
+            newnode.set_text_file( outfilename, outlen, md.hexdigest() )
         else:
             newnode = node
 
@@ -199,36 +234,6 @@ class SvnDumpEolFix:
         if self.__temp_file_nr > self.__temp_file_max_nr:
             self.__temp_file_max_nr = self.__temp_file_nr
         return "%s/tmpnode%d" % ( self.__temp_dir, self.__temp_file_nr )
-
-    def __callback_prop( self, dumpfile, node, textfiles ):
-        """Check for property and do conversion if needed."""
-
-        # do we allready know that it is a textfile ?
-        if textfiles.has_key( node.get_path() ):
-            if node.get_action() == "delete":
-                del textfiles[node.get_path()]
-            return True
-
-        # handle copy-from-path ??? +++
-
-        # check properties
-        properties = node.get_properties()
-        if properties == None:
-            return False
-        if not properties.has_key("svn:eol-style"):
-            return False
-
-        # is a text file, add to the list
-        textfiles[node.get_path()] = dumpfile.get_rev_nr()
-        return True
-
-    def __callback_regexp( self, dumpfile, node, expressions ):
-        """Check regexp list and do conversion if needed."""
-
-        for re in expressions:
-            if re.match( node.get_path() ) != None:
-                return True
-        return False
 
 
 def svndump_eol_fix_cmdline( appname, args ):
@@ -262,7 +267,7 @@ def svndump_eol_fix_cmdline( appname, args ):
         eolfix.set_output_file( args[1] )
     if options.mode == "prop":
         eolfix.set_mode_prop()
-    elif options.mode == "prop":
+    elif options.mode == "regexp":
         eolfix.set_mode_regexp( options.regexp )
 
     eolfix.execute()
