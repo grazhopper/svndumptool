@@ -315,11 +315,12 @@ class SvnDumpEolFix:
                 data = node.text_read( handle )
             if len( carry ) != 0:
                 if fix & 2 != 0:
-                    outfile.write( "\n" )
-                    outlen = outlen + 1
-                elif fix & 4 == 0:
-                    outfile.write( carry )
-                    outlen = outlen + 1
+                    carry = "\n"
+                elif fix & 4 != 0:
+                    carry = ""
+                outfile.write( carry )
+                md.update( carry )
+                outlen += len( carry )
             outfile.close()
             newnode = SvnDumpNode( node.get_path(), node.get_action(),
                                    node.get_kind() )
