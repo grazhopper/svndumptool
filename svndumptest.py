@@ -30,6 +30,7 @@ import svndump
 from svndump.node import SvnDumpNode
 from svndump.file import SvnDumpFile
 from svndump.diff import svndump_diff_cmdline
+from svndump.eolfix import svndump_eol_fix_cmdline
 
 def run( cmd ):
     print "cmd <%s>" % cmd
@@ -111,8 +112,11 @@ def svn_create_dump_file( filename, fileid, data, reposdir, wcdir ):
             nodefile = "%s/%s" % ( wcdir, path )
             if action == "delete":
                 run( "svn rm '%s'" % nodefile )
+            elif kind == "dir" and action == "replace":
+                # replace = rm and add
+                run( "svn rm '%s'" % nodefile )
+                run( "svn add '%s'" % nodefile )
             elif kind == "dir" and action == "add":
-                # replace is not handled for dirs, is this possible with svn?
                 if isdir( nodefile ):
                     # allready there, probably copied with parent dir
                     pass
@@ -128,7 +132,7 @@ def svn_create_dump_file( filename, fileid, data, reposdir, wcdir ):
             elif kind == "file":
                 add = False
                 if action == "replace":
-                    # replace = delet & add
+                    # replace = delete & add
                     add = True
                     run( "svn rm '%s'" % nodefile )
                 if action == "add" and not isfile( nodefile ):
@@ -498,9 +502,10 @@ def test_dumps( params ):
     tempwc = params["tempwc"]
 
     # test1: create a dump with commandline and python classes then compare
-    svndmp = tempdir + "/testdump1svn"
-    pydmp = tempdir + "/testdump1py"
-    pydmp2 = tempdir + "/testdump1py2"
+    svndmp = tempdir + "/test_dumps_svn"
+    pydmp = tempdir + "/test_dumps_py1"
+    pydmp2 = tempdir + "/test_dumps_py2"
+
     # create with cmdline
     svn_create_dump_file( svndmp, "test1", data_test1, temprepos, tempwc )
     # create with python
@@ -508,6 +513,10 @@ def test_dumps( params ):
     # copy the one created with cmdline
     svndump.copy_dump_file( svndmp, pydmp2 )
     # compare svndmp and pydmp2
+    rc = run( "diff -u '%s' '%s'" % ( svndmp, pydmp2 ) )
+    if rc != 0:
+        print "diffs found :("
+        return 1
     rc = svndump_diff_cmdline( "svndumptest.py",
                                [ "-IUUID", "-IRevDateStr", svndmp, pydmp2 ] )
     if rc != 0:
@@ -523,8 +532,37 @@ def test_dumps( params ):
     # done.
     return 0
 
+def test_eolfix( params ):
+    """Test 1: Test creating dumps."""
+
+    # get params
+    tempdir = params["tempdir"]
+    tempfiles = params["tempfiles"]
+    temprepos = params["temprepos"]
+    tempwc = params["tempwc"]
+
+    # broken and fixed dumps
+    broken = tempdir + "/test_eolfix_1"
+    fixed = tempdir + "/test_eolfix_2"
+
+    # create dump
+    py_create_dump_file( broken, "eolfix", data_test1, tempfiles )
+    # eolfix
+    svndump_eol_fix_cmdline( "svndumptest.py",
+                             [ "-mregexp", "-r", "\\.txt$", broken, fixed ] )
+    # compare broken and fixed
+    rc = svndump_diff_cmdline( "svndumptest.py",
+                               [ "-E", "-IEOL", "-ITextLen", "-ITextMD5", broken, fixed ] )
+    if rc != 0:
+        print "diffs found :("
+        return 1
+
+    # done.
+    return 0
+
 if __name__ == '__main__':
 
     params = test_init()
     test_dumps( params )
+    test_eolfix( params )
 
