@@ -447,31 +447,21 @@ class SvnDumpDiff:
                     # next...
                     i1 += 1
                     i2 += 1
-                if i1 == cn1 and i2 == cn2:
-                    # compare the last character
-                    if cmpstr1[i1] == '\r' or cmpstr2[i2] == '\r':
-                        # one of both is a CR and may be the start of a CRLF
-                        pass
-                    elif cmpstr1[i1] == cmpstr2[i2]:
-                        # ok, eat it
-                        i1 += 1
-                        i2 += 1
-                    else:
-                        # it's a diff
-                        cmpmode = 2
+                # remove processed data from cmpstr and adjust readcount
+                cmpstr1 = cmpstr1[i1:]
+                cmpstr2 = cmpstr2[i2:]
+                cn1 = len( cmpstr1 )
+                cn2 = len( cmpstr2 )
                 if cmpmode == 1:
-                    # remove processed data from cmpstr and adjust readcount
-                    cmpstr1 = cmpstr1[i1:]
-                    cmpstr2 = cmpstr2[i2:]
-                    cn1 = len( cmpstr1 )
-                    cn2 = len( cmpstr2 )
+                    # adjust readcount
                     if cn1 > cn2:
                         readcount1 = defreadcount + cn1 - cn2
                         readcount2 = defreadcount
                     else:
                         readcount1 = defreadcount
                         readcount2 = defreadcount + cn2 - cn1
-                    if cn1 > 0 and cn2 > 0:
+                    #if n1 > 0 and n2 > 0 and cn1 > 0 and cn2 > 0:
+                    if n1 > 0 or n2 > 0:
                         forceloop = True
                 else:
                     # reset readcount
@@ -488,9 +478,12 @@ class SvnDumpDiff:
             if n2 > 0:
                 str2 = node2.text_read( handle2, readcount2 )
                 n2 = len(str2)
-        if cmpmode == 1 and cmpstr1 != cmpstr2:
-            # diff in the last char
-            cmpmode = 2
+        if cmpmode == 1:
+            # compare trailing data (can only occur in eol-check mode)
+            cmpstr1 = cmpstr1.replace( "\r\n", "\n" ).replace( "\r", "\n" )
+            cmpstr2 = cmpstr2.replace( "\r\n", "\n" ).replace( "\r", "\n" )
+            if cmpstr1 != cmpstr2:
+                cmpmode = 2
         mdstr1 = md1.hexdigest()
         mdstr2 = md2.hexdigest()
         if node1.get_text_md5() != mdstr1:
