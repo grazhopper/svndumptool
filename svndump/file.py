@@ -23,8 +23,12 @@
 from common import *
 from node import SvnDumpNode
 
+__doc__ = """SvnDumpFile class."""
+
 class SvnDumpFile:
-    "a class for reading/writing svn dump files"
+    """
+    A class for reading and writing svn dump files.
+    """
 
     def __init__( self ):
         # states
@@ -65,7 +69,14 @@ class SvnDumpFile:
 
 
     def __read_line( self, raiseEof ):
-        "read one line from teh dump file, returns (eof, line), line without LF"
+        """
+        Read one line from teh dump file.
+
+        @type raiseEof: integer (+++should be bool!)
+        @param raiseEof: Raise SvnDumpException when true and EOF occured.
+        @rtype: integer, string
+        @return: (eof, line), line without LF.
+        """
 
         line = self.__file.readline()
         if self.__line__counting != 0:
@@ -78,7 +89,14 @@ class SvnDumpFile:
         raise SvnDumpException, "unexpected end of file"
 
     def __read_bin( self, length ):
-        "read LEN bytes"
+        """
+        Read some  bytes.
+
+        @type length: integer
+        @param length: Count of bytes to read.
+        @rtype: string
+        @return: The data read.
+        """
 
         data = self.__file.read( length )
         if self.__line__counting != 0:
@@ -86,7 +104,12 @@ class SvnDumpFile:
         return data
 
     def __skip_bin( self, length ):
-        "skip LEN bytes"
+        """
+        Skip some bytes.
+
+        @type length: integer
+        @param length: Count of bytes to skip.
+        """
 
         if self.__line__counting == 0:
             self.__file.seek( self.__file.tell() + length )
@@ -100,7 +123,9 @@ class SvnDumpFile:
             length = length - nBytes
 
     def __skip_empty_line( self ):
-        "read one line from the dump file and check that it is empty"
+        """
+        Read one line from the dump file and check that it is empty.
+        """
 
         eof, line = self.__read_line( 0 )
         if eof != 0 or len( line ) != 0:
@@ -108,7 +133,14 @@ class SvnDumpFile:
         return
 
     def __get_tag( self, raiseEof ):
-        "read a Tag line (name: value)"
+        """
+        Read a Tag line (name: value).
+
+        @type raiseEof: integer (+++should be bool!)
+        @param raiseEof: Raise SvnDumpException when true and EOF occured.
+        @rtype: list( string )
+        @return: A list containing the tag name and value.
+        """
 
         eof, line = self.__read_line( raiseEof )
         if len( line ) == 0:
@@ -119,7 +151,12 @@ class SvnDumpFile:
         return words
 
     def __get_tag_list( self ):
-        "get a list of tags, end is an empty line"
+        """
+        Get a list of tags, end is an empty line.
+
+        @rtype: dict( string -> string )
+        @return: A dict containing the tags.
+        """
 
         tags = {}
         self.__tag_start_offset = self.__file.tell()
@@ -137,7 +174,12 @@ class SvnDumpFile:
         return tags
 
     def __get_prop_list( self ):
-        "get a list of properties"
+        """
+        Get a list of properties.
+
+        @rtype: dict( string -> string )
+        @return: A dict containing the properties.
+        """
 
         props = OrderedDict()
         eof, line = self.__read_line( 1 )
@@ -165,7 +207,14 @@ class SvnDumpFile:
 
 
     def __create_prop_string( self, properties ):
-        "create a string from a dict containing properties"
+        """
+        Create a string from a dict containing properties.
+
+        @type properties: dict( string -> string )
+        @param properties: A dict containing the properties.
+        @rtype: string
+        @return: A string containing the properties.
+        """
 
         propStr = ""
         if properties != None:
@@ -182,7 +231,17 @@ class SvnDumpFile:
 
 
     def __set_rev_date( self, dateStr ):
-        "check a date string and return a valid one"
+        """
+        Check a date string, set and return a valid one.
+
+        If the date is less or equal the previous revision date the current
+        revision date will be set to the previous plus one micro second.
+
+        @type dateStr: string
+        @param dateStr: A svn date string.
+        @rtype: string
+        @return: A svn date string.
+        """
 
         date = parse_svn_date_str( dateStr )
         if self.__rev_nr > 1:
@@ -204,8 +263,11 @@ class SvnDumpFile:
     #  open / create / close
 
     def open( self, filename ):
-        """open a dump file for reading and read the header
-                - filename: name of an existing dump file"""
+        """
+        Open a dump file for reading and read the header.
+        @type filename: string
+        @param filename: Name of an existing dump file.
+        """
 
         # check state
         if self.__state != self.ST_NONE:
@@ -238,12 +300,16 @@ class SvnDumpFile:
         self.__state = self.ST_READ
 
     def create_with_rev_0( self, filename, uuid, rev0date ):
-        """Create a new dump file.
+        """
+        Create a new dump file starting with revision 0.
 
-            This method creates a new dump file starting with revision 0.
-             - filename:    name of the new dump file
-             - uuid:        uuid of the new dump file
-             - rev0date:    date of revision 0"""
+        @type filename: string
+        @param filename: Name of the new dump file.
+        @type uuid: string
+        @param uuid: UUID of the new dump file.
+        @type rev0date: string
+        @param rev0date: Svn date string for revision 0.
+        """
 
         # check state
         if self.__state != self.ST_NONE:
@@ -282,10 +348,16 @@ class SvnDumpFile:
         self.__state = self.ST_CREATE
 
     def create_with_rev_n( self, filename, uuid, firstRevNr ):
-        """create a new dump file
-                - filename: name of the new dump file
-                - uuid: uuid of the new dump file
-                - firstRevNr: first revision number (>0)"""
+        """
+        Create a new dump file.
+
+        @type filename: string
+        @param filename: Name of the new dump file.
+        @type uuid: string
+        @param uuid: UUID of the new dump file.
+        @type firstRevNr: integer
+        @param firstRevNr: First revision number (>0).
+        """
 
         # check state
         if self.__state != self.ST_NONE:
@@ -314,7 +386,9 @@ class SvnDumpFile:
         self.__state = self.ST_CREATE
 
     def close( self ):
-        "close this svn dump file"
+        """
+        Close this svn dump file.
+        """
 
         # close only if state != ST_NONE
         if self.__state != self.ST_NONE:
@@ -332,7 +406,9 @@ class SvnDumpFile:
     #  read methods
     
     def read_next_rev( self ):
-        "read the next revision"
+        """
+        Read the next revision.
+        """
 
         # check state
         if self.__state != self.ST_READ:
@@ -412,55 +488,124 @@ class SvnDumpFile:
         return 1
 
     def has_revision( self ):
-        "Returns false when EOF occured."
+        """
+        Returns false when EOF occured.
+
+        @rtype: bool
+        @return: False if EOF occured.
+        """
         return self.__state == self.ST_READ or self.__state == self.ST_WRITE
 
     def get_uuid( self ):
-        "Returns the UUID of this dump file."
+        """
+        Returns the UUID of this dump file.
+
+        @rtype: string
+        @return: UUID of this dump file.
+        """
         return self.__uuid
 
     def get_rev_nr( self ):
-        "Returns the current revision number."
+        """
+        Returns the current revision number.
+
+        @rtype: integer
+        @return: The current revision number.
+        """
         return self.__rev_nr
 
     def get_rev_date( self ):
-        "Returns the date of the current revision as [ time_t, millis ]."
+        """
+        Returns the date of the current revision as [ time_t, micros ].
+
+        @rtype: list( integer )
+        @return: The revision date.
+        """
         return self.__rev_date[:]
 
     def get_rev_date_str( self ):
-        "Returns the date of the current revision as string."
+        """
+        Returns the date of the current revision as string.
+
+        @rtype: string
+        @return: The revision date.
+        """
         return self.__rev_props["svn:date"]
 
     def get_rev_author( self ):
-        "Returns the author of the current revision."
+        """
+        Returns the author of the current revision.
+
+        @rtype: string
+        @return: Author of the current revision.
+        """
         return self.__rev_props["svn:author"]
 
     def get_rev_log( self ):
-        "Returns the log message of the current revision."
+        """
+        Returns the log message of the current revision.
+
+        @rtype: string
+        @return: The log message.
+        """
         return self.__rev_props["svn:log"]
 
     def get_rev_prop_names( self ):
-        "Returns a list of revision property names of the current revision."
+        """
+        Returns a list of revision property names of the current revision.
+
+        @rtype: list( string )
+        @return: A list of revision property names.
+        """
         return self.__rev_props.keys()
 
     def has_rev_prop( self, name ):
-        "Returns true if the current revision has a property with the specified name."
+        """
+        Returns true if the revision has a property with the specified name.
+
+        @rtype: bool
+        @return: True if the revision has that property.
+        """
         return self.__rev_props.has_key(name)
 
     def get_rev_props( self ):
-        "Returns a dict containing the revision properties."
+        """
+        Returns a dict containing the revision properties.
+
+        @rtype: dict( string -> string )
+        @return: The revision properties.
+        """
         return self.__rev_props
 
     def get_rev_prop_value( self, name ):
-        "Returns the value of the revision property with the specified name."
+        """
+        Returns the value of the revision property with the specified name.
+
+        @type name: string
+        @param name: Name of the property.
+        @rtype: string
+        @return: The value of the revision property.
+        """
         return self.__rev_props[name]
 
     def get_node_count( self ):
-        "Returns the count of nodes of the current revision."
+        """
+        Returns the count of nodes of the current revision.
+
+        @rtype: integer
+        @return: Node count of the curent revision.
+        """
         return len( self.__nodes )
 
     def get_node( self, index ):
-        "Returns the node at the given index."
+        """
+        Returns the node at the given index.
+
+        @type index: integer
+        @param index: Index of the node to return.
+        @rtype: SvnDumpNode
+        @return: The node at the given index.
+        """
         return self.__nodes[ index ]
 
 
@@ -468,8 +613,12 @@ class SvnDumpFile:
     #  write methods
 
     def add_rev_from_dump( self, dump ):
-        """Add the current revision of the specified dump file to this dump file
-            - dump: a dump file"""
+        """
+        Add the current revision of the specified SvnDumpFile to this one.
+        
+        @type dump: SvnDumpFile
+        @param dump: A dump file.
+        """
 
         # check of state is done in add_rev
         # add revision and revprops
@@ -483,8 +632,12 @@ class SvnDumpFile:
             index = index + 1
 
     def add_rev( self, revProps ):
-        """Add a new revision to this dump file
-                - revProps: a dict with revision properties"""
+        """
+        Add a new revision to this dump file.
+
+        @type revProps: dict( string -> string )
+        @param revProps: A dict with revision properties.
+        """
 
         # check state
         if self.__state != self.ST_WRITE and self.__state != self.ST_CREATE :
@@ -514,8 +667,14 @@ class SvnDumpFile:
         self.__state = self.ST_WRITE
 
     def add_node( self, node ):
-        """Add a node to the current revision
-                - node: the node to add (class SvnDumpNode)"""
+        """
+        Add a node to the current revision.
+
+        This method uses SvnDumpNode.write_text_to_file().
+
+        @type node: SvnDumpNode
+        @param node: The node to add.
+        """
 
         # check state
         if self.__state != self.ST_WRITE:

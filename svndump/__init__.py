@@ -26,8 +26,17 @@ __all__ = [ "common", "node", "file", "diff", "merge", "eolfix" ]
 import common
 from file import SvnDumpFile
 
+__doc__ = """A package for processing subversion dump files."""
+
 def copy_dump_file( srcfile, dstfile ):
-    "copy a dumpfile"
+    """
+    Copy a dumpfile.
+
+    @type srcfile: string
+    @param srcfile: Source filename.
+    @type dstfile: string
+    @param dstfile: Destination filename.
+    """
 
     # SvnDumpFile classes for reading/writing dumps
     srcdmp = SvnDumpFile()

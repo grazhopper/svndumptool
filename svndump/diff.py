@@ -25,13 +25,23 @@ from optparse import OptionParser
 
 from file import SvnDumpFile
 
-class SvnDumpDiffCallback:
-    """Callback function for SvnDumpDiff.
+__doc__ = """Diff functions and classes."""
 
-        blabla+++++"""
+class SvnDumpDiffCallback:
+    """
+    Callback class for SvnDumpDiff.
+
+    The methods of this class get called by SvnDumpDiff and output the diff
+    results.
+    """
 
     def __init__( self, verbosity ):
-        """Init method."""
+        """
+        Initialize.
+
+        @type verbosity: integer
+        @param verbosity: Verbosity level, 0=quiet, 1=normal, 2=verbose.
+        """
         self.verbosity = verbosity
         self.diffs = False
         self.filename1 = ""
@@ -52,23 +62,61 @@ class SvnDumpDiffCallback:
         self.__summary = {}
 
     def add_ignore( self, type ):
-        """Adds an ignore."""
+        """
+        Adds an ignore.
+
+        Valid types are:
+         - types of rev_diff()
+         - types of node_diff()
+         - types of text_diff()
+         - 'RevPropDiff'
+         - 'RevPropMissing'
+         - 'NodeMissing'
+         - 'WrongMD5'
+         - 'PropDiff'
+         - 'PropMissing'
+
+        @type type: string
+        @param type: Diff type to ignore.
+        """
         self.__ignores[type] = None
 
     def add_revprop_ignore( self, name ):
-        """Adds an ignore."""
+        """
+        Adds a revision property name to ignore.
+
+        @type name: string
+        @param name: Revprop name.
+        """
         self.__ignore_revprop[name] = None
 
     def add_property_ignore( self, name ):
-        """Adds an ignore."""
+        """
+        Adds a property name to ignore.
+
+        @type name: string
+        @param name: A property name.
+        """
         self.__ignore_property[name] = None
 
     def had_diffs( self ):
-        """Returns True when diffs were found."""
+        """
+        Returns True when diffs were found which were not ignored.
+
+        @rtype: bool
+        @return: True when diffs were found.
+        """
         return self.diffs
 
     def comparing( self, filename1, filename2 ):
-        """Called at the beginning."""
+        """
+        Called at the beginning.
+
+        @type filename1: string
+        @param filename1: Name of the first file.
+        @type filename2: string
+        @param filename2: Name of the second file.
+        """
 
         self.filename1 = filename1
         self.filename2 = filename2
@@ -78,7 +126,9 @@ class SvnDumpDiffCallback:
             print "  dump2: '%s'" % self.filename2
 
     def compare_done( self ):
-        """Called at the end of the diff."""
+        """
+        Called at the end of the diff.
+        """
 
         if self.verbosity > 0:
             if self.diffs:
@@ -93,6 +143,12 @@ class SvnDumpDiffCallback:
 
     def __summary_inc( self, type, show ):
         """
+        Increase the count for the given type in the summary.
+
+        @type type: string
+        @param type: A diff type.
+        @type show: bool
+        @param show: True if the type is not ignored.
         """
         s = 0
         if show:
@@ -104,7 +160,14 @@ class SvnDumpDiffCallback:
             self.__summary[type] = [ 1, s ]
 
     def next_revision( self, revnr1, revnr2 ):
-        """Called when starting to compare a new revision."""
+        """
+        Called when starting to compare a new revision.
+
+        @type revnr1: integer
+        @param revnr1: Revision number of the first file.
+        @type revnr2: integer
+        @param revnr2: Revision number of the second file.
+        """
 
         self.revnr1 = revnr1
         self.revnr2 = revnr2
@@ -114,12 +177,24 @@ class SvnDumpDiffCallback:
             self.__print_rev()
 
     def __print_rev( self ):
+        """
+        Prints the revision numbers if not allready done.
+        """
         if not self.__rev_printed:
             self.__rev_printed = True
             print "Revision: %d/%d" % ( self.revnr1, self.revnr2 )
 
     def next_node( self, node, index1, index2 ):
-        """Called when starting to compare a new node."""
+        """
+        Called when starting to compare a new node.
+
+        @type node: SvnDumpNode
+        @param node: Next node beeing diffed.
+        @type index1: integer
+        @param index1: Index of the node in the first dump.
+        @type index2: integer
+        @param index2: Index of the node in the second dump.
+        """
 
         self.action = node.get_action()
         self.kind = node.get_kind()
@@ -132,6 +207,9 @@ class SvnDumpDiffCallback:
             self.__print_node()
 
     def __print_node( self ):
+        """
+        Prints the node (action, kind, path) if not allready done.
+        """
         self.__print_rev()
         if not self.__node_printed:
             self.__node_printed = True
@@ -139,7 +217,23 @@ class SvnDumpDiffCallback:
                 ( self.action, self.kind, self.path, self.index1, self.index2 )
 
     def rev_diff( self, type, value1, value2 ):
-        """Called when a difference has been found."""
+        """
+        Called when a difference has been found.
+
+        Called with the following types:
+         - 'UUID'
+         - 'RevNr'
+         - 'RevDate'
+         - 'RevDateStr'
+         - 'NodeCount'
+
+        @type type: string
+        @param type: A diff type.
+        @type value1: string
+        @param value1: Value of first dump.
+        @type value2: string
+        @param value2: Value of second dump.
+        """
 
         show = True
         if self.__ignores.has_key( type ):
@@ -154,7 +248,16 @@ class SvnDumpDiffCallback:
                 print "    dump2: '%s'" % value2
 
     def revprop_diff( self, name, value1, value2 ):
-        """Called when a revprop is in one dump only."""
+        """
+        Called when a revprop is in one dump only.
+
+        @type name: string
+        @param name: Name of the revision property.
+        @type value1: string
+        @param value1: Value of first dump.
+        @type value2: string
+        @param value2: Value of second dump.
+        """
 
         show = True
         if self.__ignores.has_key( "RevPropDiff" ):
@@ -173,7 +276,16 @@ class SvnDumpDiffCallback:
                 print "      dump2: '%s'" % value2
 
     def revprop_missing( self, dumpnr, name, value ):
-        """Called when a revprop is in one dump only."""
+        """
+        Called when a revprop is in one dump only.
+
+        @type dumpnr: integer
+        @param dumpnr: Number of the dump file, 1 = first, 2 = second.
+        @type name: string
+        @param name: Name of the revision property.
+        @type value: string
+        @param value: Value of first dump.
+        """
 
         show = True
         if self.__ignores.has_key( "RevPropMissing" ):
@@ -191,7 +303,26 @@ class SvnDumpDiffCallback:
                 print "      dump%d: '%s'" % ( 3-dumpnr, value )
 
     def node_diff( self, type, value1, value2 ):
-        """Called when a difference has been found."""
+        """
+        Called when a difference has been found.
+
+        Called with the following types:
+         - 'Path'
+         - 'Action'
+         - 'Kind'
+         - 'CopyFromPath'
+         - 'CopyFromRev'
+         - 'HasText'
+         - 'TextLen'
+         - 'TextMD5'
+
+        @type type: string
+        @param type: A diff type.
+        @type value1: string
+        @param value1: Value of first dump.
+        @type value2: string
+        @param value2: Value of second dump.
+        """
 
         show = True
         if self.__ignores.has_key( type ):
@@ -206,7 +337,14 @@ class SvnDumpDiffCallback:
                 print "      dump2: '%s'" % value2
 
     def node_missing( self, dumpnr, node ):
-        """Called when a node exists in one dump only."""
+        """
+        Called when a node exists in one dump only.
+
+        @type dumpnr: integer
+        @param dumpnr: Number of the dump file, 1 = first, 2 = second.
+        @type node: SvnDumpNode
+        @param node: Node of the other dump.
+        """
 
         show = True
         if self.__ignores.has_key( "NodeMissing" ):
@@ -221,7 +359,16 @@ class SvnDumpDiffCallback:
                     ( node.get_action(), node.get_kind(), node.get_path() )
 
     def wrong_md5( self, dumpnr, should, calc ):
-        """Called when text has worng MD5."""
+        """
+        Called when text has worng MD5.
+
+        @type dumpnr: integer
+        @param dumpnr: Number of the dump file, 1 = first, 2 = second.
+        @type should: string
+        @param should: MD5 sum in the dump file.
+        @type calc: string
+        @param calc: Calculated MD5 sum.
+        """
 
         show = True
         if self.__ignores.has_key( "WrongMD5" ):
@@ -236,7 +383,16 @@ class SvnDumpDiffCallback:
                 print "      calculated:  '%s'" % calc
 
     def text_diff( self, type ):
-        """Called when text differs."""
+        """
+        Called when text differs.
+
+        Called with the following types:
+         - 'EOL'
+         - 'Text'
+
+        @type type: string
+        @param type: A diff type.
+        """
 
         show = True
         if self.__ignores.has_key( type ):
@@ -249,7 +405,16 @@ class SvnDumpDiffCallback:
                 print "+   Text differs (type '%s')" % type
 
     def prop_diff( self, name, value1, value2 ):
-        """Called when a revprop is in one dump only."""
+        """
+        Called when a revprop is in one dump only.
+
+        @type name: string
+        @param name: Name of the property.
+        @type value1: string
+        @param value1: Value of first dump.
+        @type value2: string
+        @param value2: Value of second dump.
+        """
 
         show = True
         if self.__ignores.has_key( "PropDiff" ):
@@ -269,7 +434,16 @@ class SvnDumpDiffCallback:
                 print "        dump2: '%s'" % value2
 
     def prop_missing( self, dumpnr, name, value ):
-        """Called when a revprop is in one dump only."""
+        """
+        Called when a revprop is in one dump only.
+
+        @type dumpnr: integer
+        @param dumpnr: Number of the dump file, 1 = first, 2 = second.
+        @type name: string
+        @param name: Name of the property.
+        @type value: string
+        @param value: Value of first dump.
+        """
 
         show = True
         if self.__ignores.has_key( "PropMissing" ):
@@ -288,20 +462,40 @@ class SvnDumpDiffCallback:
                 print "        dump%d: '%s'" % ( 3-dumpnr, value )
 
 class SvnDumpDiff:
-    """A class for comparing svn dump files."""
+    """
+    A class for comparing svn dump files.
+    """
 
     def __init__( self, filename1, filename2 ):
+        """
+        Initialize.
+
+        @type filename1: string
+        @param filename1: First dump file name.
+        @type filename2: string
+        @param filename2: Second dump file name.
+        """
 
         self.__filename1 = filename1
         self.__filename2 = filename2
         self.__check_eol = False
 
     def set_check_eol( self, check=True ):
-        """Set or clear the check-eol flag."""
+        """
+        Set or clear the check-eol flag.
+
+        @type check: bool
+        @param check: True for doing EOL check.
+        """
         self.__check_eol = check
 
     def execute( self, callback ):
-        """Execute the diff."""
+        """
+        Execute the diff.
+
+        @type callback: SvnDumpDiffCallback
+        @param callback: Callback object for diffs found.
+        """
 
         # diff started
         callback.comparing( self.__filename1, self.__filename2 )
@@ -355,7 +549,16 @@ class SvnDumpDiff:
         callback.compare_done()
 
     def __compare_nodes( self, dump1, dump2, callback ):
-        """Compares the nodes of the current revision of two dump files."""
+        """
+        Compares the nodes of the current revision of two dump files.
+
+        @type dump1: SvnDumpFile
+        @param dump1: First dump file.
+        @type dump2: SvnDumpFile
+        @param dump2: Second dump file.
+        @type callback: SvnDumpDiffCallback
+        @param callback: Callback object for diffs found.
+        """
 
         n1 = dump1.get_node_count()
         n2 = dump2.get_node_count()
@@ -394,7 +597,16 @@ class SvnDumpDiff:
                 self.__compare_node( node1, node2, callback )
 
     def __compare_node( self, node1, node2, callback ):
-        """Compare two nodes."""
+        """
+        Compare two nodes.
+
+        @type node1: SvnDumpNode
+        @param node1: First dump node.
+        @type node2: SvnDumpNode
+        @param node2: Second dump node.
+        @type callback: SvnDumpDiffCallback
+        @param callback: Callback object for diffs found.
+        """
 
         # compare path
         if node1.get_path() != node2.get_path():
@@ -541,7 +753,18 @@ class SvnDumpDiff:
             callback.text_diff( "Text" )
 
     def __compare_properties( self, revprops, props1, props2, callback ):
-        """Compare properties."""
+        """
+        Compare properties.
+
+        @type revprops: bool
+        @param revprops: True when comparing revision properties.
+        @type props1: dict( string -> string )
+        @param props1: Dict containing the properties of the first dump.
+        @type props2: dict( string -> string )
+        @param props2: Dict containing the properties of the second dump.
+        @type callback: SvnDumpDiffCallback
+        @param callback: Callback object for diffs found.
+        """
 
         if props1 == None and props2 == None:
             return
@@ -572,7 +795,20 @@ class SvnDumpDiff:
                     callback.prop_diff( name, props1[name], props2[name] )
 
 def svndump_diff_cmdline( appname, args ):
-    """cmdline..."""
+    """
+    Parses the commandline and executes the diff.
+
+    Usage:
+
+        >>> svndump_diff_cmdline( sys.argv[0], sys.argv[1:] )
+
+    @type appname: string
+    @param appname: Name of the application (used in help text).
+    @type args: list( string )
+    @param args: Commandline arguments.
+    @rtype: integer
+    @return: Return code (0 = OK).
+    """
 
     usage = "usage: %s [options] dump1 dump2" % appname
     parser = OptionParser( usage=usage, version="%prog 0.1" )

@@ -26,8 +26,12 @@ import md5
 
 from common import *
 
+__doc__ = """SvnDumpNode class."""
+
 class SvnDumpNode:
-    """A node of a svn dump file."""
+    """
+    A node of a svn dump file.
+    """
 
     def __init__( self, path, action, kind ):
         """
@@ -269,7 +273,7 @@ class SvnDumpNode:
         Sets the properties for this node.
 
         @type properties: dict( string -> string )
-        @param: A dict containing the properties.
+        @param properties: A dict containing the properties.
         """
 
         # +++ weird check: self.__action == "" !?!

@@ -27,8 +27,16 @@ import md5
 from file import SvnDumpFile
 from node import SvnDumpNode
 
+__doc__ = """Classes and functions for fixing EOL's in a dump file."""
+
 def eolfix_callback_prop( dumpfile, node, textfiles ):
-    """Check for property and do conversion if needed."""
+    """
+    Callbcak function which checks for svn:eol-style property.
+
+    Returns True if a conversion of the text is needed.
+
+    B{WARNING: This function is not tested!}
+    """
 
     # do we allready know that it is a textfile ?
     if textfiles.has_key( node.get_path() ):
@@ -51,7 +59,11 @@ def eolfix_callback_prop( dumpfile, node, textfiles ):
     return True
 
 def eolfix_callback_regexp( dumpfile, node, expressions ):
-    """Check regexp list and do conversion if needed."""
+    """
+    Callback function which checks the node path using a regexp list.
+    
+    Returns True if a conversion of the text is needed.
+    """
 
     for re in expressions:
         if re.search( node.get_path() ) != None:
@@ -59,9 +71,14 @@ def eolfix_callback_regexp( dumpfile, node, expressions ):
     return False
 
 class SvnDumpEolFix:
-    """A class for fixing mixed EOL style files in a svn dump file."""
+    """
+    A class for fixing mixed EOL style files in a svn dump file.
+    """
 
     def __init__( self ):
+        """
+        Initialize.
+        """
 
         # input file name
         self.__in_file = ""
@@ -85,62 +102,99 @@ class SvnDumpEolFix:
         self.__temp_file_nr = 0
 
     def set_input_file( self, filename ):
-        """Sets the input dump file name."""
+        """
+        Sets the input dump file name.
+
+        @type filename: string
+        @param filename: Name of the input file.
+        """
         self.__in_file = filename
 
     def set_output_file( self, filename ):
-        """Sets the output dump file name and clears the dry-run flag."""
+        """
+        Sets the output dump file name and clears the dry-run flag.
+
+        @type filename: string
+        @param filename: Name of the output file.
+        """
         self.__out_file = filename
         self.__dry_run = False
 
     def set_mode_prop( self ):
-        """Sets mode to 'prop'.
+        """
+        Sets mode to 'prop'.
 
-            in this mode SvnDumpEolFix assumes text files have the property
-            svn:eol-style set."""
+        In this mode SvnDumpEolFix assumes text files have the property
+        svn:eol-style set.
+
+        B{See also:} eolfix_callback_prop
+        """
         self.__is_text_file = eolfix_callback_prop
         self.__is_text_file_params = {}
 
     def set_mode_regexp( self, expressions ):
-        """Sets mode to regexp.
+        """
+        Sets mode to 'regexp'.
 
-            In this mode every file which matches at least one of the regexps
-            is treated as text file."""
+        In this mode every file which matches at least one of the regexps
+        is treated as text file.
+
+        B{See also:} eolfix_callback_regexp
+
+        @type expressions: list( string )
+        @param expressions: A list of regular expressions.
+        """
         self.__is_text_file = eolfix_callback_regexp
         self.__is_text_file_params = []
         for expr in expressions:
             self.__is_text_file_params.append( re.compile( expr ) )
 
     def set_mode_callback( self, callback, parameter ):
-        """Sets mode to callback.
+        """
+        Sets mode to 'callback'.
 
-            ++++"""
+        @type callback: function( SvnDumpFile, SvnDumpNode, parameter )
+        @param callback: Callback function to check if conversion is needed.
+        @type parameter: any
+        @param parameter: A parameter given to the callback function.
+        """
 
         self.__is_text_file = callback
         self.__is_text_file_params = parameter
 
     def set_eol_style( self, eolstyle ):
-        """Enable/disable setting eol-style on text files.
+        """
+        Enable/disable setting eol-style on text files.
         
-            If eolstyle is None do not set svn:eol-style, else set it
-            to the given value."""
+        If eolstyle is None do not set svn:eol-style, else set it
+        to the given value.
+
+        @type eolstyle: string
+        @param eolstyle: Value for the svn:eol-style property or None.
+        """
         self.__eol_style = eolstyle
 
     def set_fix_options( self, fix ):
-        """Set what to fix.
+        """
+        Set what to fix.
 
-            fix is a string containing comma separated options.
-            valid values are:
-             'CRLF'   replace CRLF by LF
-             'CR'     replace CR by LF
-             'RemCR'  remove CR"""
+        @type fix: string
+        @param fix: A string containing comma separated options.
+            Valid options are:
+             - 'CRLF':  replace CRLF by LF
+             - 'CR':    replace CR by LF
+             - 'RemCR': remove CR
+        """
         self.__fix = self.__parse_fix_option( fix )
 
     def set_fix_for_rev_file( self, fixrevfile ):
-        """Set what to fix for a given revision/file.
+        """
+        Set what to fix for a given revision/file.
 
-            fixrevpath is a string containing colon separated the
-            fix option, revsision number and path of a file."""
+        @type fixrevfile: string
+        @param fixrevfile: A string containing colon separated the
+            fix option, revsision number and path of a file.
+        """
         parts = fixrevfile.split( ":", 2 )
         if len( parts ) != 3:
             print "wrong number of fiels for fixrevfile option."
@@ -150,7 +204,14 @@ class SvnDumpEolFix:
         print key, self.__fix_rev_path[key]
 
     def __parse_fix_option( self, fixstr ):
-        """Parses a string containing comma separated fix options."""
+        """
+        Parses a string containing comma separated fix options.
+
+        @type fixstr: string
+        @param fixstr: Fix option string.
+        @rtype: integer
+        @return: Fix options.
+        """
         fix = 0
         for f in fixstr.split( ',' ):
             if f == "CRLF":
@@ -162,7 +223,12 @@ class SvnDumpEolFix:
         return fix
 
     def set_warning_file( self, warnfile ):
-        """Sets the filename for writing warnings into."""
+        """
+        Sets the filename for writing warnings into.
+
+        @type warnfile: string
+        @param warnfile: Name of the warnings file.
+        """
         if self.__warning_file != None:
             self.__warning_file.close()
         self.__warning_file = open( warnfile )
@@ -174,13 +240,20 @@ class SvnDumpEolFix:
         self.__warning_file.write( "\n" )
 
     def set_temp_dir( self, tmpdir ):
-        """Sets the the directory for temporary files."""
+        """
+        Sets the the directory for temporary files.
+
+        @type tmpdir: string
+        @param tmpdir: Name of the tmp dir.
+        """
         if tmpdir[-1] != "/":
             tmpdir += "/"
         self.__temp_dir = tmpdir
 
     def execute( self ):
-        """Executes the EolFix."""
+        """
+        Executes the EolFix.
+        """
 
         # +++ catch exception and return errorcode
         srcdmp = SvnDumpFile()
@@ -211,7 +284,14 @@ class SvnDumpEolFix:
                 hasrev = srcdmp.read_next_rev()
 
     def __process_rev( self, srcdmp, dstdmp ):
-        """Process one revision."""
+        """
+        Process one revision.
+
+        @type srcdmp: SvnDumpFile
+        @param srcdmp: The source dump file.
+        @type dstdmp: SvnDumpFile
+        @param dstdmp: The destination dump file.
+        """
 
         # clear temp file nr (overwrite old files)
         self.__temp_file_nr = 0
@@ -241,7 +321,16 @@ class SvnDumpEolFix:
             index = index + 1
 
     def __convert_eol( self, node, revnr ):
-        """Convert EOL of a node"""
+        """
+        Convert EOL of a node.
+
+        @type node: SvnDumpNode
+        @param node: The node to convert.
+        @type revnr: integer
+        @param revnr: The current revision number.
+        @rtype: SvnDumpNode
+        @return: The converted node.
+        """
 
         if node.get_text_length == -1:
             # no text
@@ -337,7 +426,12 @@ class SvnDumpEolFix:
         return newnode
 
     def __temp_file_name( self ):
-        """Create temp file name"""
+        """
+        Create temp file name.
+
+        @rtype: string
+        @return: A temp file name.
+        """
         self.__temp_file_nr = self.__temp_file_nr + 1
         if self.__temp_file_nr > self.__temp_file_max_nr:
             self.__temp_file_max_nr = self.__temp_file_nr
@@ -345,7 +439,20 @@ class SvnDumpEolFix:
 
 
 def svndump_eol_fix_cmdline( appname, args ):
-    """cmdline..."""
+    """
+    Parses the commandline and executes the eolfix.
+
+    Usage:
+
+        >>> svndump_eol_fix_cmdline( sys.argv[0], sys.argv[1:] )
+
+    @type appname: string
+    @param appname: Name of the application (used in help text).
+    @type args: list( string )
+    @param args: Commandline arguments.
+    @rtype: integer
+    @return: Return code (0 = OK).
+    """
 
     usage = "usage: %s [options] src [dst]" % appname
     parser = OptionParser( usage=usage, version="%prog 0.1" )

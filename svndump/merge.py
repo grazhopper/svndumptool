@@ -25,12 +25,19 @@ from optparse import OptionParser
 
 from file import SvnDumpFile
 
+__doc__ = """Clases and functions for merging dump files."""
+
 class SvnDumpMerge:
-    "a class for merging svn dump files"
+    """
+    A class for merging svn dump files.
+    """
 
     # handle copyfrom-rev !!!
 
     def __init__( self ):
+        """
+        Initialize.
+        """
 
         # output file name
         self.__out_file = ""
@@ -57,17 +64,27 @@ class SvnDumpMerge:
 
 
     def set_output_file( self, filename, startRev=0 ):
-        """Sets the output file name and optional start revision
-             - filename (string): name of the output dump file
-             - startRev (int, optional): start revision number, default is 0"""
+        """
+        Sets the output file name and optional start revision.
+
+        @type filename: string
+        @param filename: Name of the output dump file.
+        @type startRev: integer
+        @param startRev: Start revision number, default is 0.
+        """
 
         self.__out_file = filename
         self.outStartRev = startRev
 
     def add_input_file( self, filename ):
-        """Adds an input file and returns it's index
-            - filename (string): name of a input dump file
-            - return (int): index of the input file"""
+        """
+        Adds an input file and returns it's index.
+
+        @type filename: string
+        @param filename: Name of a input dump file.
+        @rtype: integer
+        @return: Index of the input file.
+        """
 
         index = len( self.__in_files )
         self.__in_files = self.__in_files + [ filename ]
@@ -77,10 +94,16 @@ class SvnDumpMerge:
         return index
 
     def add_rename( self, index, prefixFrom, prefixTo ):
-        """Adds a path prefix reanme.
-             - index (int): index of the dump file
-             - prefixFrom (string): from path prefix (directory)
-             - prefixTo (string): to path prefix (directory)"""
+        """
+        Adds a path prefix reanme.
+
+        @type index: integer
+        @param index: Index of the dump file.
+        @type prefixFrom: string
+        @param prefixFrom: From-path prefix (directory).
+        @type prefixTo: string
+        @param prefixTo: To-path prefix (directory).
+        """
 
         # make sure that prefixFrom starts and ends with a /
         if prefixFrom[0:1] == "/":
@@ -97,15 +120,25 @@ class SvnDumpMerge:
                                 [ (prefixFrom, prefixTo ) ]
 
     def add_mkdir_exclude( self, index, dirName ):
-        """Adds a mkdir exclude.
-             - index (int): index of the dump file
-             - dirName (string): name of the directory"""
+        """
+        Adds a mkdir exclude.
+
+        @type index: integer
+        @param index: Index of the dump file.
+        @type dirName: string
+        @param dirName: Name of the directory.
+        """
 
         # add the mkdir exclude
         self.__in_excludes[index][dirName] = None
 
     def add_directory( self, dirName ):
-        """adds an additional directory"""
+        """
+        Adds an additional directory ('mkdir').
+
+        @type dirName: string
+        @param dirName: Name of the directory.
+        """
         if dirName[0:1] == "/":
             dirName = dirName[1:]
         if dirName[-1:] == "/":
@@ -113,11 +146,18 @@ class SvnDumpMerge:
         self.__out_dirs = self.__out_dirs + [ dirName ]
 
     def set_log_message( self, msg ):
-        """set log message for additional dirs revision"""
+        """
+        Set log message for additional dirs revision.
+
+        @type msg: string
+        @param msg: Log message.
+        """
         self.__out_message = msg
 
     def merge( self ):
-        """Executes the merge."""
+        """
+        Executes the merge.
+        """
 
         # open input dump files
         for inFile in self.__in_files:
@@ -193,8 +233,12 @@ class SvnDumpMerge:
             
 
     def __copy_revision( self, dumpIndex ):
-        """INTERNAL: don't use !!!
-             copies a revision from inDump[dumpIndex] to outDump"""
+        """
+        Copies a revision from inDump[dumpIndex] to outDump.
+
+        @type dumpIndex: integer
+        @param dumpIndex: Index of the input dump file.
+        """
 
         srcDump = self.__in_dumps[dumpIndex]
 
@@ -216,8 +260,14 @@ class SvnDumpMerge:
                     self.outDump.get_rev_nr()
 
     def __change_node( self, dumpIndex, node ):
-        """INTERNAL: don't use !!!
-             creates a new node if the path changed, else returns the old node"""
+        """
+        Creates a new node if the path changed, else returns the old node.
+
+        @type dumpIndex: integer
+        @param dumpIndex: Index of the input dump file.
+        @type node: SvnDumpNode
+        @param node: A node.
+        """
 
         path = node.get_path()
         # mkdir exclude check
@@ -256,10 +306,16 @@ class SvnDumpMerge:
         return newNode
 
     def __rename_path( self, path, renames ):
-        """INTERNAL: don't use !!!
-             Applies the renames to the path and returns the new path
-             - path (string): a path
-             - renames: list of rename tuples"""
+        """
+        Applies the renames to the path and returns the new path.
+
+        @type path: string
+        @param path: A path.
+        @type renames: list( ( string, string ) )
+        @param renames: List of rename tuples.
+        @rtype: string
+        @return Renamed path.
+        """
 
         # ensure that path does not a leading slash
         if len(path) > 1 and path[0:1] == "/":
@@ -277,9 +333,12 @@ class SvnDumpMerge:
         return path
 
     def __remove_empty_dumps( self ):
-        """INTERNAL: don't use !!!
-        +++++++++ not used ??? (*&#^(*&@#^%($#!!!
-             removes dump files which reached EOF and returns the count of dumps"""
+        """
+        Removes dump files which reached EOF and returns the count of dumps.
+
+        @rtype: integer
+        @return: Count of remaining input dump files.
+        """
 
         index = 0
         while index < len( self.__in_dumps ):
@@ -298,46 +357,61 @@ class SvnDumpMerge:
 
 
 def __svndump_merge_opt_i( option, opt, value, parser, *args ):
-    # option parser callback for input file '-i <filename>'
+    """
+    Option parser callback for input file '-i <filename>'.
+    """
     merge = args[0]
     vars = args[1]
     vars["fileindex"] = merge.add_input_file( value )
 
 def __svndump_merge_opt_r( option, opt, value, parser, *args ):
-    # option parser callback for rename '-r from to'
+    """
+    Option parser callback for rename '-r from to'.
+    """
     merge = args[0]
     vars = args[1]
     merge.add_rename( vars["fileIndex"], value[0], value[1] )
 
 def __svndump_merge_opt_x( option, opt, value, parser, *args ):
-    # option parser callback for mkdir exclude '-x dir'
+    """
+    Option parser callback for mkdir exclude '-x dir'.
+    """
     merge = args[0]
     vars = args[1]
     merge.add_mkdir_exclude( vars["fileIndex"], value )
 
 def __svndump_merge_opt_o( option, opt, value, parser, *args ):
-    # option parser callback for output file '-o filename'
+    """
+    Option parser callback for output file '-o filename'.
+    """
     merge = args[0]
     vars = args[1]
     merge.set_output_file( value )
     vars["outFileSet"] = 1
 
 def __svndump_merge_opt_d( option, opt, value, parser, *args ):
-    # option parser callback for mkdir '-d dirname'
+    """
+    Option parser callback for mkdir '-d dirname'.
+    """
     merge = args[0]
     vars = args[1]
     merge.add_directory( value )
 
 def __svndump_merge_opt_m( option, opt, value, parser, *args ):
-    # option parser callback for message '-m message'
+    """
+    Option parser callback for message '-m message'.
+    """
     merge = args[0]
     vars = args[1]
     merge.set_log_message( value )
     vars["logMsgSet"] = 1
 
 def __svndump_merge_example( option, opt, value, parser, *args ):
-    # option parser callback for example output
-    "prints a little usage example"
+    """
+    Option parser callback for example output.
+    
+    Prints a little usage example.
+    """
 
     print ""
     print "svndumpmerge.py \\"
@@ -360,7 +434,20 @@ def __svndump_merge_example( option, opt, value, parser, *args ):
 
 
 def svndump_merge_cmdline( appname, args ):
-    """cmdline..."""
+    """
+    Parses the commandline and executes the merge.
+
+    Usage:
+
+        >>> svndump_merge_cmdline( sys.argv[0], sys.argv[1:] )
+
+    @type appname: string
+    @param appname: Name of the application (used in help text).
+    @type args: list( string )
+    @param args: Commandline arguments.
+    @rtype: integer
+    @return: Return code (0 = OK).
+    """
 
     usage = "usage: %s [options]" % appname
     parser = OptionParser( usage=usage, version="%prog 0.1" )
