@@ -197,7 +197,7 @@ class SvnDumpMerge:
         oldest = None
         oldestStr = ""
         for index in range(len(self.__in_dumps)):
-            revDat = self.__in_rev_dates + [ self.__in_dumps[index].get_rev_date() ]
+            revDat = self.__in_rev_dates + [ self.__in_dumps[index].get_rev_date_str() ]
             self.__in_rev_dates = revDat
             if oldest == None or revDat < oldest:
                 oldest = revDat
@@ -225,7 +225,7 @@ class SvnDumpMerge:
             # read next revision
             srcDump = self.__in_dumps[oldestIndex]
             if srcDump.read_next_rev():
-                self.__in_rev_dates[oldestIndex] = srcDump.get_rev_date()
+                self.__in_rev_dates[oldestIndex] = srcDump.get_rev_date_str()
             else:
                 dumpCount = self.__remove_empty_dumps()
 
