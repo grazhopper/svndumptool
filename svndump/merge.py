@@ -221,7 +221,9 @@ class SvnDumpMerge:
                     oldestIndex = index
             # copy revision
             self.__copy_revision( oldestIndex )
-            print "Revision: %d" % self.outDump.get_rev_nr()
+            print "Revision: %-6d from r%-6d %s" % ( self.outDump.get_rev_nr(),
+                        self.__in_dumps[oldestIndex].get_rev_nr(),
+                        self.__in_files[oldestIndex] )
             # read next revision
             srcDump = self.__in_dumps[oldestIndex]
             if srcDump.read_next_rev():
