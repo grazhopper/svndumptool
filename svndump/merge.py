@@ -299,8 +299,7 @@ class SvnDumpMerge:
         # do the rename
         newNode = SvnDumpNode( newPath, node.get_action(), node.get_kind() )
         if node.has_copy_from():
-            newNode.set_copy_from( node.get_copy_from_path(),
-                                   node.get_copy_from_rev() )
+            newNode.set_copy_from( newFromPath, newFromRev )
         if node.has_properties():
             newNode.set_properties( node.get_properties() )
         if node.has_text():
