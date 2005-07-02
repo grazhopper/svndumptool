@@ -136,7 +136,7 @@ class ListDict( dict ):
         @rtype: iterator
         @return: An iterator over the items.
         """
-        return ListDictIter( self, 0 )
+        return ListDictIter( self, 1 )
 
     def __setitem__( self, key, value ):
         """
