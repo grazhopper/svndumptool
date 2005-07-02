@@ -38,11 +38,20 @@ def parse_svn_date_str( dateStr ):
     return [ int(time.mktime(dat)), int( dateStr[20:26] ) ]
 
 def is_valid_md5_string( md5 ):
-    "checks a md5 string"
+    """
+    Checks a md5 string.
+
+    @type md5: object
+    @param md5: Index or key.
+    @rtype: bool
+    @return: True if the string looks like an md5 sum.
+    """
 
     if len( md5 ) != 32:
-        return 0
-    return 1
+        return False
+    if md5.lower().strip( "0123456789abcdef" ) != "":
+        return False
+    return True
 
 class SvnDumpException( Exception ):
     """A simple exception class."""
@@ -52,4 +61,180 @@ class SvnDumpException( Exception ):
 
     def __str__( self ):
         return self.text
+
+class ListDictIter:
+    """
+    Iterator class used by ListDict.
+    """
+
+    def __init__( self, listdict, type ):
+        self.__listdict = listdict
+        self.__type = type
+        self.__index = 0
+
+    def __iter__( self ):
+        return self
+
+    def next( self ):
+        index = self.__index
+        if index >= len( self.__listdict ):
+            raise StopIteration()
+        self.__index = index+1
+        if self.__type == 1:
+            return self.__listdict.key( index )
+        elif self.__type == 2:
+            return self.__listdict[ index ]
+        else:
+            return self.__listdict.item( index )
+
+class ListDict( dict ):
+    """
+    A mix of list and dict.
+
+    If the key is an int this class acts like a list else like a dict.
+    """
+
+    def __init__( self ):
+        """
+        Initialize.
+        """
+        dict.__init__( self )
+        self.__index = []
+
+    def __delitem__( self, key ):
+        """
+        Removes the key/value pair for the specified key or index.
+
+        @type key: object
+        @param key: Index or key.
+        """
+        if type( key ) is int:
+            index = key
+            key = self.__index[index]
+        else:
+            index = self.__index.index( key )
+        del self.__index[index]
+        dict.__delitem__( self, key )
+
+    def __getitem__( self, key ):
+        """
+        Returns the value for the specified key or index if it's an int.
+
+        @type key: object
+        @param key: Index or key.
+        @rtype: object
+        @return: An object.
+        """
+        if type( key ) is int:
+            key = self.__index[key]
+        return dict.__getitem__( self, key )
+
+    def __iter__( self ):
+        """
+        Returns an iterator returning key/value tuples ordered by index.
+
+        @rtype: iterator
+        @return: An iterator over the items.
+        """
+        return ListDictIter( self, 0 )
+
+    def __setitem__( self, key, value ):
+        """
+        Adds a key/value pair or replaces the value if the key already exists.
+
+        The key may be an int (=index) when replacing a value.
+
+        @type key: object
+        @param key: Key or index if replacing a value.
+        @type value: object
+        @param value: A value.
+        """
+        if type( key ) is int:
+            key = self.__index[key]
+        if not self.has_key( key ):
+            self.__index.append( key )
+        dict.__setitem__( self, key, value )
+
+    def item( self, index ):
+        """
+        Returns the key/value tuple for the given index.
+
+        @type index: int
+        @param index: Index of the item (tuple).
+        @rtype: tuple
+        @return: An item (key/value pair).
+        """
+        key = self.__index[ index ]
+        return ( key, dict.__getitem__( self, key ) )
+
+    def items( self ):
+        """
+        Returns a list of key/value tuples ordered by index.
+
+        @rtype: list
+        @return: A list of values.
+        """
+        ret = []
+        for key in self.__index:
+            ret.append( ( key, dict.__getitem__( self, key ) ) )
+        return ret
+
+    def iteritems( self ):
+        """
+        Returns an iterator returning key/value tuples ordered by index.
+
+        @rtype: iterator
+        @return: An iterator over the items.
+        """
+        return ListDictIter( self, 0 )
+
+    def iterkeys( self ):
+        """
+        Returns an iterator returning keys ordered by index.
+
+        @rtype: iterator
+        @return: An iterator over the keys.
+        """
+        return ListDictIter( self, 1 )
+
+    def itervalues( self ):
+        """
+        Returns an iterator returning values ordered by index.
+
+        @rtype: iterator
+        @return: An iterator over the values.
+        """
+        return ListDictIter( self, 2 )
+
+    def key( self, index ):
+        """
+        Returns the key for the given index.
+
+        @type index: int
+        @param index: Index of the key.
+        @rtype: object
+        @return: A key.
+        """
+        return self.__index[ index ]
+
+    def keys( self ):
+        """
+        Returns a list of keys ordered by index.
+
+        @rtype: list
+        @return: A list of keys.
+        """
+        return self.__index
+
+    def values( self ):
+        """
+        Returns a list of values ordered by index.
+
+        @rtype: list
+        @return: A list of values.
+        """
+        ret = []
+        for key in self.__index:
+            ret.append( dict.__getitem__( self, key ) )
+        return ret
 

@@ -72,9 +72,9 @@ class SvnDumpFile:
         """
         Read one line from teh dump file.
 
-        @type raiseEof: integer (+++should be bool!)
-        @param raiseEof: Raise SvnDumpException when true and EOF occured.
-        @rtype: integer, string
+        @type raiseEof: bool
+        @param raiseEof: Raise SvnDumpException when True and EOF occured.
+        @rtype: bool, string
         @return: (eof, line), line without LF.
         """
 
@@ -82,10 +82,10 @@ class SvnDumpFile:
         if self.__line__counting != 0:
             self.__line_nr = self.__line_nr + 1
         if len( line ) != 0:
-            return 0, line[:-1]
+            return False, line[:-1]
         self.__file_eof = 1
-        if raiseEof == 0:
-            return 1, ""
+        if not raiseEof:
+            return True, ""
         raise SvnDumpException, "unexpected end of file"
 
     def __read_bin( self, length ):
@@ -127,8 +127,8 @@ class SvnDumpFile:
         Read one line from the dump file and check that it is empty.
         """
 
-        eof, line = self.__read_line( 0 )
-        if eof != 0 or len( line ) != 0:
+        eof, line = self.__read_line( False )
+        if eof or len( line ) != 0:
             raise SvnDumpException, "expected empty line, found '%s'" % line
         return
 
@@ -136,8 +136,8 @@ class SvnDumpFile:
         """
         Read a Tag line (name: value).
 
-        @type raiseEof: integer (+++should be bool!)
-        @param raiseEof: Raise SvnDumpException when true and EOF occured.
+        @type raiseEof: bool
+        @param raiseEof: Raise SvnDumpException when True and EOF occured.
         @rtype: list( string )
         @return: A list containing the tag name and value.
         """
@@ -161,16 +161,16 @@ class SvnDumpFile:
         tags = {}
         self.__tag_start_offset = self.__file.tell()
         self.__tag_start_line_nr = self.__line_nr
-        tag = self.__get_tag( 0 )
+        tag = self.__get_tag( False )
         while len( tag ) == 0:
             if self.__file_eof:
                 return tags
             self.__tag_start_offset = self.__file.tell()
             self.__tag_start_line_nr = self.__line_nr
-            tag = self.__get_tag( 0 )
+            tag = self.__get_tag( False )
         while len( tag ) == 2:
             tags[ tag[0] ] = tag[1]
-            tag = self.__get_tag( 1 )
+            tag = self.__get_tag( True )
         return tags
 
     def __get_prop_list( self ):
@@ -181,8 +181,8 @@ class SvnDumpFile:
         @return: A dict containing the properties.
         """
 
-        props = OrderedDict()
-        eof, line = self.__read_line( 1 )
+        props = ListDict()
+        eof, line = self.__read_line( True )
         while line != "PROPS-END":
             # key
             words = line.split()
@@ -193,7 +193,7 @@ class SvnDumpFile:
             # value
             value = None
             if words[0] == "K":
-                eof, line = self.__read_line( 1 )
+                eof, line = self.__read_line( True )
                 words = line.split()
                 if len( words ) != 2 or words[0] != "V":
                     raise SvnDumpException, "illegal proprty value ???"
@@ -202,7 +202,7 @@ class SvnDumpFile:
             # set property
             props[key] = value
             # next line...
-            eof, line = self.__read_line( 1 )
+            eof, line = self.__read_line( True )
         return props
 
 
@@ -281,7 +281,7 @@ class SvnDumpFile:
         self.__file = open( filename, "rb" )
 
         # check that it is a svn dump file
-        tag = self.__get_tag( 1 )
+        tag = self.__get_tag( True )
         if tag[0] != "SVN-fs-dump-format-version:":
             raise SvnDumpException, "not a svn dump file ???"
         if tag[1] != "2":
@@ -289,7 +289,7 @@ class SvnDumpFile:
         self.__skip_empty_line()
 
         # get UUID
-        tag = self.__get_tag( 1 )
+        tag = self.__get_tag( True )
         if tag[0] != "UUID:":
             raise SvnDumpException, "missing UUID"
         self.__uuid = tag[1]
