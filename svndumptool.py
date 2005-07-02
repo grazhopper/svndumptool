@@ -28,7 +28,7 @@ from svndump.diff import svndump_diff_cmdline
 from svndump.merge import svndump_merge_cmdline
 from svndump.eolfix import svndump_eol_fix_cmdline
 
-def help( x ):
+def __help( appname, args ):
     print ""
     print "svndumptool.py command [options]"
     print ""
@@ -40,36 +40,39 @@ def help( x ):
     print ""
     print "  use 'svndumptool.py command -h' for help about the commands."
     print ""
-    sys.exit( 0 )
+    return 0
+
+def __print_version( appname, args ):
+    print appname + " " + __version
+    return 0
 
 if __name__ == '__main__':
+    funcs = {
+        "diff":     svndump_diff_cmdline,
+        "eolfix":   svndump_eol_fix_cmdline,
+        "merge":    svndump_merge_cmdline
+    }
     appname = sys.argv[0].replace( "\\", "/" )
-    args = sys.argv[1:]
     n = appname.rfind( "/" )
     if n >= 0:
         appname = appname[n+1:]
-    if appname == "svndumpmerge.py":
-        func = svndump_merge_cmdline
-    elif appname == "svndumpeolfix.py":
-        func = svndump_eol_fix_cmdline
-    elif appname == "svndumpdiff.py":
-        func = svndump_diff_cmdline
-    elif len( args ) > 0:
-        if args[0] == "merge":
-            func = svndump_merge_cmdline
-        elif args[0] == "eolfix":
-            func = svndump_eol_fix_cmdline
-        elif args[0] == "diff":
-            func = svndump_diff_cmdline
-        elif args[0] == "--version":
-            print appname + " " + __version
-            sys.exit( 0 )
-        else:
-            help( args[0] )
-        appname = appname + " " + args[0]
-        args = args[1:]
-    else:
-        help( "" )
-
+    pfx = appname[0:7]
+    cmd = appname[7:-3]
+    sfx = appname[-3:]
+    func = __help;
+    args = []
+    argidx = 0
+    if pfx == "svndump" and sfx == ".py" and funcs.has_key( cmd ):
+        func = funcs[cmd]
+        argidx = 1
+    elif len( sys.argv ) > 1:
+        cmd = sys.argv[1]
+        if funcs.has_key( cmd ):
+            func = funcs[cmd]
+        elif cmd == "--version":
+            func = __print_version
+        argidx = 2
+    if argidx < len( sys.argv ):
+        args = sys.argv[argidx:]
     sys.exit( func( appname, args ) )
 
