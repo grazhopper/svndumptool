@@ -3,7 +3,7 @@ Changelog of svndumptool
 ========================
 
 
-0.2.1: Bugfix release
+0.2.1: Bugfix release (2005-07-02)
 
  - Use get_rev_date_str() instead of get_rev_date() in merge.py because
    get_rev_date returns an adjusted date, have to change that later.
@@ -12,6 +12,6 @@ Changelog of svndumptool
  - Open warn file for writing in eolfix.py.
 
 
-0.2: First public release
+0.2: First public release (2005-03-20)
 
 

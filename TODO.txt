@@ -9,4 +9,5 @@ TODO list for svndumptool
  * show the source of a revision when merging
  * fix get_rev_date() when reading files
  * merge: make the root renamable too
+ * make UUID optional
 
