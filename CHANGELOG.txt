@@ -1,0 +1,17 @@
+
+Changelog of svndumptool
+========================
+
+
+0.2.1: Bugfix release
+
+ - Use get_rev_date_str() instead of get_rev_date() in merge.py because
+   get_rev_date returns an adjusted date, have to change that later.
+ - Use the right values for copy-from path and revision in __change_node().
+ - Open files in binary mode to circumvent windows CRLF bug.
+ - Open warn file for writing in eolfix.py.
+
+
+0.2: First public release
+
+
