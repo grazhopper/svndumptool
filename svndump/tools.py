@@ -276,7 +276,7 @@ def svndump_check_cmdline( appname, args ):
     @return: Return code (0 = OK).
     """
 
-    usage = "usage: %s [options] dumpfile" % appname
+    usage = "usage: %s [options] dumpfiles..." % appname
     parser = OptionParser( usage=usage, version="%prog "+__version )
     check = SvnDumpCheck()
     parser.add_option( "-d", "--check-dates",
@@ -305,6 +305,102 @@ def svndump_check_cmdline( appname, args ):
     rc = 0
     for filename in args:
         if check.execute( filename ) != 0:
+            rc = 1
+    return rc
+
+#-------------------------------------------------------------------------------
+# log
+
+class SvnDumpLog:
+    """
+    A class for checking svn dump files.
+    """
+
+    def __init__( self ):
+        """
+        Initialize.
+        """
+
+        # verbose
+        self.__verbose = False
+
+    def set_verbose( self, verbose ):
+        """
+        Set the verbose flag to the given value.
+
+        @type verbose: bool
+        @param verbose: New value for the flag.
+        """
+
+        self.__verbose = verbose
+
+    def execute( self, dumpfilename ):
+        """
+        Print log of a dump file.
+
+        @type dumpfilename: string
+        @param dumpfilename: Name of the file to log.
+        """
+
+        print "\n\n" + "=" * 72
+        line = "-" * 72
+        print "Dumpfile: " + dumpfilename
+        dump = SvnDumpFile()
+        dump.open( dumpfilename )
+        actions = { "add":"A", "change":"M", "delete":"D", "replace":"R" }
+
+        while dump.read_next_rev():
+            revnr = dump.get_rev_nr()
+            author = dump.get_rev_author()
+            date = dump.get_rev_date_str()
+            log = dump.get_rev_log()
+            linecnt = len( log.split( "\n" ) )
+            lines = "%d line" % linecnt
+            if linecnt > 1:
+                lines += "s"
+            print line
+            print "r%d | %s | %s | %s" % ( revnr, author, date, lines )
+            if self.__verbose:
+                print "Changed paths:"
+                for node in dump.get_nodes_iter():
+                    action = actions[node.get_action()]
+                    path = node.get_path()
+                    print "   %s %s" % ( action, path )
+            print "\n" + log.rstrip()
+
+        print line
+        dump.close()
+        return 0
+
+def svndump_log_cmdline( appname, args ):
+    """
+    Parses the commandline and executes the log.
+
+    Usage:
+
+        >>> svndump_log_cmdline( sys.argv[0], sys.argv[1:] )
+
+    @type appname: string
+    @param appname: Name of the application (used in help text).
+    @type args: list( string )
+    @param args: Commandline arguments.
+    @rtype: integer
+    @return: Return code (0 = OK).
+    """
+
+    usage = "usage: %s [options] dumpfiles..." % appname
+    parser = OptionParser( usage=usage, version="%prog "+__version )
+    log = SvnDumpLog()
+    parser.add_option( "-v", "--verbose",
+                       action="store_true", dest="verbose", default=False,
+                       help="verbose output" )
+    (options, args) = parser.parse_args( args )
+
+    log.set_verbose( options.verbose )
+
+    rc = 0
+    for filename in args:
+        if log.execute( filename ) != 0:
             rc = 1
     return rc
 
