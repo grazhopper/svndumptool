@@ -47,7 +47,7 @@ class SvnDumpFile:
         # end of file
         self.__file_eof = 0
         # UUID of the repository
-        self.__uuid = ""
+        self.__uuid = None
         # curent revision number
         self.__rev_nr = 0
         # date of the revision
@@ -272,11 +272,16 @@ class SvnDumpFile:
         self.__skip_empty_line()
 
         # get UUID
+        fileoffset = self.__file.tell()
         tag = self.__get_tag( True )
         if tag[0] != "UUID:":
-            raise SvnDumpException, "missing UUID"
-        self.__uuid = tag[1]
-        self.__skip_empty_line()
+            # back to start of revision
+            self.__file.seek( fileoffset )
+            self.__uuid = None
+        else:
+            # set UUID
+            self.__uuid = tag[1]
+            self.__skip_empty_line()
 
         # done initializing
         self.__rev_start_offset = self.__file.tell()
@@ -289,7 +294,7 @@ class SvnDumpFile:
         @type filename: string
         @param filename: Name of the new dump file.
         @type uuid: string
-        @param uuid: UUID of the new dump file.
+        @param uuid: UUID of the new dump file or None.
         @type rev0date: string
         @param rev0date: Svn date string for revision 0.
         """
@@ -310,10 +315,9 @@ class SvnDumpFile:
         self.__file = open( filename, "wb" )
 
         # write header and uuid
-        self.__file.writelines( [ "SVN-fs-dump-format-version: 2\n",
-                                "\n",
-                                "UUID: " + uuid + "\n",
-                                "\n" ] )
+        self.__file.writelines( [ "SVN-fs-dump-format-version: 2\n", "\n" ] )
+        if self.__uuid != None:
+            self.__file.writelines( [ "UUID: " + self.__uuid + "\n", "\n" ] )
 
         # write header and uuid
         self.__file.writelines( [ "Revision-number: 0\n",
@@ -337,7 +341,7 @@ class SvnDumpFile:
         @type filename: string
         @param filename: Name of the new dump file.
         @type uuid: string
-        @param uuid: UUID of the new dump file.
+        @param uuid: UUID of the new dump file or None.
         @type firstRevNr: integer
         @param firstRevNr: First revision number (>0).
         """
@@ -360,10 +364,9 @@ class SvnDumpFile:
         self.__file = open( filename, "wb" )
 
         # write header and uuid
-        self.__file.writelines( [ "SVN-fs-dump-format-version: 2\n",
-                                "\n",
-                                "UUID: " + uuid + "\n",
-                                "\n" ] )
+        self.__file.writelines( [ "SVN-fs-dump-format-version: 2\n", "\n" ] )
+        if self.__uuid != None:
+            self.__file.writelines( [ "UUID: " + self.__uuid + "\n", "\n" ] )
 
         # done initializing
         self.__state = self.ST_CREATE
@@ -378,11 +381,11 @@ class SvnDumpFile:
             self.__file.close()
             self.__line_nr = 0
             self.__file_eof = 0
-            del self.__filename
-            del self.__uuid
-            del self.__file
-            #del self.__rev_props
-            #del self.__nodes   +++ why can't i delete that ???
+            self.__filename = None
+            self.__uuid = None
+            self.__file = None
+            self.__rev_props = None
+            self.__nodes = None
             self.__state = self.ST_NONE
 
     #------------------------------------------------------------
@@ -485,7 +488,7 @@ class SvnDumpFile:
         Returns the UUID of this dump file.
 
         @rtype: string
-        @return: UUID of this dump file.
+        @return: UUID of this dump file or None if it doesn't have one.
         """
         return self.__uuid
 
