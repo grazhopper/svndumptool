@@ -168,6 +168,14 @@ class ListDict( dict ):
             self.__index.append( key )
         dict.__setitem__( self, key, value )
 
+    def clear( self ):
+        """
+        Clears this ListDict.
+        """
+
+        dict.clear( self )
+        self.__index = []
+
     def item( self, index ):
         """
         Returns the key/value tuple for the given index.
