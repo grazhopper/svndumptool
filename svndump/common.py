@@ -29,13 +29,26 @@ __doc__ = """Common functions and classes."""
 # <sussman> it's our own string format, in libsvn_subr/time.c
 # <sussman> svn_time_[to|from]_cstring()
 def parse_svn_date_str( dateStr ):
-    "Parse a svn date string and return a list containing time_t and micros."
+    """
+    Parse a svn date string and return a tuple containing time_t and micros.
+    """
+
     if len(dateStr) != 27:
-        return [0,0]
+        return (0,0)
     if dateStr[19] != "." or dateStr[26] != "Z":
-        return [0,0]
+        return (0,0)
     dat = time.strptime( dateStr[:19], "%Y-%m-%dT%H:%M:%S" )
-    return [ int(time.mktime(dat)), int( dateStr[20:26] ) ]
+    return ( int(time.mktime(dat)), int( dateStr[20:26] ) )
+
+def create_svn_date_str( dateTuple ):
+    """
+    Creates a svn date string from a tuple containing time_t and micros.
+    """
+
+    dat = time.localtime( dateTuple[0] )
+    dstr = time.strftime( "%Y-%m-%dT%H:%M:%S", dat )
+    mstr = ".%06dZ" % ( dateTuple[1] )
+    return dstr + mstr
 
 def is_valid_md5_string( md5 ):
     """

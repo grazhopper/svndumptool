@@ -51,7 +51,7 @@ class SvnDumpFile:
         # curent revision number
         self.__rev_nr = 0
         # date of the revision
-        self.__rev_date = [0,0]
+        self.__rev_date = (0,0)
         # start offset of the next revision
         self.__rev_start_offset = 0
         # revision properties
@@ -234,30 +234,13 @@ class SvnDumpFile:
         """
         Check a date string, set and return a valid one.
 
-        If the date is less or equal the previous revision date the current
-        revision date will be set to the previous plus one micro second.
-
         @type dateStr: string
         @param dateStr: A svn date string.
         @rtype: string
         @return: A svn date string.
         """
-
-        date = parse_svn_date_str( dateStr )
-        if self.__rev_nr > 1:
-            if date[0] < self.__rev_date[0] or \
-                    (date[0] == self.__rev_date[0] and date[1] <= self.__rev_date[1]):
-                date[0] = self.__rev_date[0]
-                date[1] = self.__rev_date[1] + 1
-                if date[1] > 999999:
-                    date[1] = 0
-                    date[0] = date[0] + 1
-        self.__rev_date[0] = date[0]
-        self.__rev_date[1] = date[1]
-        dat = time.localtime( self.__rev_date[0] )
-        dstr = time.strftime( "%Y-%m-%dT%H:%M:%S", dat )
-        mstr = ".%06dZ" % ( self.__rev_date[1] )
-        return dstr + mstr
+        self.__rev_date = parse_svn_date_str( dateStr )
+        return create_svn_date_str( self.__rev_date )
 
     #------------------------------------------------------------
     #  open / create / close
@@ -435,10 +418,11 @@ class SvnDumpFile:
             self.__rev_props["svn:log"] = ""
         if not self.__rev_props.has_key("svn:author"):
             self.__rev_props["svn:author"] = ""
-        #if self.__rev_props.has_key("svn:date"):
-        #  self.__rev_props["svn:date"] = self.__set_rev_date( self.__rev_props["svn:date"] )
-        #else:
-        #  self.__rev_props["svn:date"] = self.__set_rev_date( self.__rev_props["svn:date"] )
+        if self.__rev_props.has_key("svn:date"):
+            self.__rev_props["svn:date"] = self.__set_rev_date(
+                    self.__rev_props["svn:date"] )
+        else:
+            self.__rev_props["svn:date"] = self.__set_rev_date( "" )
 
         # read nodes (files, dirs)
         self.__nodes = []
@@ -516,12 +500,12 @@ class SvnDumpFile:
 
     def get_rev_date( self ):
         """
-        Returns the date of the current revision as [ time_t, micros ].
+        Returns the date of the current revision as ( time_t, micros ).
 
         @rtype: list( integer )
         @return: The revision date.
         """
-        return self.__rev_date[:]
+        return self.__rev_date
 
     def get_rev_date_str( self ):
         """
