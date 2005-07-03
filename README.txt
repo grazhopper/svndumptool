@@ -165,6 +165,10 @@ Known bugs:
 Merge
 -----
 
+Merges multiple dumpfiles into one. It does this by reading all dumpfiles
+at the same time and always adding the revision with the oldest revision
+date to the output dumpfile.
+
 svndumptool.py merge [options]
 
 options:
@@ -183,7 +187,9 @@ options:
   --example             show a little usage example.
 
 Known bugs:
- * None
+ * There's no warning when a dumpfile does not have monotonic increasing
+   revision dates. Use 'svndumptool.py check -d dumpfile' to check the
+   revision dates of a dumpfile.
 
 
 
