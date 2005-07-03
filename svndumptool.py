@@ -35,9 +35,9 @@ def __help( appname, args ):
     print "svndumptool.py command [options]"
     print ""
     print "  commands:"
-    print "    diff         show differences between two dump files"
     print "    check        check a dumpfile"
     print "    copy         copy a dumpfile"
+    print "    diff         show differences between two dump files"
     print "    eolfix       fix EOL of text files in a dump"
     print "    export       export files from a dumpfile"
     print "    merge        merge dump files"
@@ -53,9 +53,9 @@ def __print_version( appname, args ):
 
 if __name__ == '__main__':
     funcs = {
-        "diff":     svndump_diff_cmdline,
         "check":    svndump_check_cmdline,
         "copy":     svndump_copy_cmdline,
+        "diff":     svndump_diff_cmdline,
         "eolfix":   svndump_eol_fix_cmdline,
         "export":   svndump_export_cmdline,
         "merge":    svndump_merge_cmdline
@@ -77,6 +77,7 @@ if __name__ == '__main__':
         cmd = sys.argv[1]
         if funcs.has_key( cmd ):
             func = funcs[cmd]
+            appname += " " + cmd
         elif cmd == "--version":
             func = __print_version
         argidx = 2
