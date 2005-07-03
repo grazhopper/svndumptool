@@ -197,8 +197,8 @@ class SvnDumpMerge:
         oldest = None
         oldestStr = ""
         for index in range(len(self.__in_dumps)):
-            revDat = self.__in_rev_dates + [ self.__in_dumps[index].get_rev_date() ]
-            self.__in_rev_dates = revDat
+            revDat = self.__in_dumps[index].get_rev_date()
+            self.__in_rev_dates.append( revDat )
             if oldest == None or revDat < oldest:
                 oldest = revDat
                 oldestStr = self.__in_dumps[index].get_rev_date_str()
@@ -206,8 +206,8 @@ class SvnDumpMerge:
         # add additional directories
         if len(self.__out_dirs) > 0:
             self.outDump.add_rev( { "svn:log" : self.__out_message,
-                                        "svn:author" : self.__out_author,
-                                        "svn:date" : oldestStr } )
+                                    "svn:author" : self.__out_author,
+                                    "svn:date" : oldestStr } )
             for dirName in self.__out_dirs:
                 node = SvnDumpNode( dirName, "add", "dir" )
                 self.outDump.add_node( node )
@@ -221,7 +221,9 @@ class SvnDumpMerge:
                     oldestIndex = index
             # copy revision
             self.__copy_revision( oldestIndex )
-            print "Revision: %d" % self.outDump.get_rev_nr()
+            print "Revision: %-8d from r%-8d %s" % ( self.outDump.get_rev_nr(),
+                self.__in_dumps[oldestIndex].get_rev_nr(),
+                self.__in_files[oldestIndex] )
             # read next revision
             srcDump = self.__in_dumps[oldestIndex]
             if srcDump.read_next_rev():
@@ -276,8 +278,11 @@ class SvnDumpMerge:
         if node.get_kind() == "dir" and node.get_action() == "add":
             if path in self.__in_excludes[dumpIndex]:
                 return None
-        fromPath = node.get_copy_from_path()
-        fromRev = node.get_copy_from_rev()
+        fromPath = ""
+        fromRev = 0
+        if node.has_copy_from():
+            fromPath = node.get_copy_from_path()
+            fromRev = node.get_copy_from_rev()
         change = 0
         newPath = self.__rename_path( path, self.__in_renames[dumpIndex] )
         newFromPath = fromPath
@@ -285,7 +290,8 @@ class SvnDumpMerge:
         if path != newPath:
             change = 1
         if fromRev > 0:
-            newFromPath = self.__rename_path( fromPath, self.__in_renames[dumpIndex] )
+            newFromPath = self.__rename_path( fromPath,
+                                              self.__in_renames[dumpIndex] )
             if fromPath != newFromPath:
                 change = 1
             newFromRev = self.__in_rev_nr_maps[dumpIndex][fromRev]
@@ -299,8 +305,7 @@ class SvnDumpMerge:
         # do the rename
         newNode = SvnDumpNode( newPath, node.get_action(), node.get_kind() )
         if node.has_copy_from():
-            newNode.set_copy_from( node.get_copy_from_path(),
-                                   node.get_copy_from_rev() )
+            newNode.set_copy_from( newFromPath, newFromRev )
         if node.has_properties():
             newNode.set_properties( node.get_properties() )
         if node.has_text():
