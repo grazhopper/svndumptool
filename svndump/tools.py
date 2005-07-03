@@ -365,8 +365,16 @@ class SvnDumpLog:
                 for node in dump.get_nodes_iter():
                     action = actions[node.get_action()]
                     path = node.get_path()
+                    if path == "" or path[0] != "/":
+                        path = "/" + path
+                    if node.has_copy_from():
+                        fpath = node.get_copy_from_path()
+                        frev = node.get_copy_from_rev()
+                        if fpath == "" or fpath[0] != "/":
+                            fpath = "/" + fpath
+                        path += " (from %s:%d)" % ( fpath, frev )
                     print "   %s %s" % ( action, path )
-            print "\n" + log.rstrip()
+            print "\n" + log.rstrip() + "\n"
 
         print line
         dump.close()
