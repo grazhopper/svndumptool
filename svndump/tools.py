@@ -182,10 +182,23 @@ class SvnDumpCheck:
         Initialize.
         """
 
+        # check actions
+        self.__check_actions = False
+        self.__history = {}
         # check dates
         self.__check_dates = False
         # check md5 sums
         self.__check_md5 = False
+
+    def set_check_actions( self, docheck ):
+        """
+        Set the check actions flag to the given value.
+
+        @type docheck: bool
+        @param docheck: New value for the flag.
+        """
+
+        self.__check_actions = docheck
 
     def set_check_dates( self, docheck ):
         """
@@ -220,16 +233,17 @@ class SvnDumpCheck:
         dump.open( dumpfilename )
         rc = 0
         prev_date = ( 0, 0 )
+        self.__history = {}
 
         while dump.read_next_rev():
-            revprinted = False
+            if dump.get_rev_nr() >= 3055:
+                break
+            self.__next_rev()
             if self.__check_dates:
                 date = dump.get_rev_date()
                 if date < prev_date:
                     rc = 1
-                    if not revprinted:
-                        revprinted = True
-                        print "  Revision %d" % dump.get_rev_nr()
+                    self.__print_rev( dump.get_rev_nr() )
                     print "    rev date: %s  %10d.%06d" % (
                         dump.get_rev_date_str(), date[0], date[1] )
                     print "    previous: %s  %10d.%06d" % (
@@ -237,7 +251,7 @@ class SvnDumpCheck:
                         prev_date[0], prev_date[1] )
                 prev_date = date
             for node in dump.get_nodes_iter():
-                nodeprinted = False
+                self.__next_node()
                 if self.__check_md5 and node.has_text():
                     md = md5.new()
                     handle = node.text_open()
@@ -250,15 +264,210 @@ class SvnDumpCheck:
                     node.text_close( handle )
                     md5sum = md.hexdigest()
                     if node.get_text_md5() != md5sum:
-                        if not nodeprinted:
-                            nodeprinted = True
-                            print "    Node: %s" % node.get_path()
+                        rc = 1
+                        self.__print_node( dump.get_rev_nr(), node )
                         print "      md5 calc: %s" % md5sum
                         print "      md5 node: %s" % node.get_text+md5()
+                if self.__check_actions:
+                    msglist = self.__check_action( dump.get_rev_nr(), node )
+                    if msglist != None:
+                        rc = 1
+                        self.__print_node( dump.get_rev_nr(), node )
+                        for msg in msglist:
+                            print "      " + msg
 
         dump.close()
         print [ "OK", "Not OK" ][ rc ]
         return rc
+
+    def __next_rev( self ):
+        """
+        Clears the rev_printed flag.
+        """
+        self.__rev_printed = False
+
+    def __print_rev( self, revnr ):
+        """
+        Prints the revision number if not already done.
+
+        @type revnr: int
+        @param revnr: Current revision number.
+        """
+        if not self.__rev_printed:
+            self.__rev_printed = True
+            print "  Revision %d" % revnr
+
+    def __next_node( self ):
+        """
+        Clears the node_printed flag.
+        """
+        self.__node_printed = False
+
+    def __print_node( self, revnr, node ):
+        """
+        Prints the revision number and node path if not already done.
+
+        @type revnr: int
+        @param revnr: Current revision number.
+        @type node: SvnDumpNode
+        @param node: Current node.
+        """
+        if not self.__node_printed:
+            self.__node_printed = True
+            self.__print_rev( revnr )
+            print "    Node: %s" % node.get_path()
+
+    def __check_action( self, revnr, node ):
+        """
+        Checks the action of a node and keeps it's history.
+
+        @type revnr: int
+        @param revnr: Current revision number.
+        @type node: SvnDumpNode
+        @param node: Current node.
+        """
+        path = node.get_path()
+        action = node.get_action()
+        if action == "add":
+            # path must not exist
+            if self.__node_kind( revnr, path ) != None:
+                return [ "Node already exists." ]
+            # parent must be a dir
+            slash = path.rfind( "/" )
+            if slash > 0:
+                ppath = path[:slash]
+                pkind = self.__node_kind( revnr, ppath )
+                if pkind == None:
+                    return [ "Parent doesn't exist." ]
+                elif pkind != "D":
+                    return [ "Parent is not a directory." ]
+            # copy-from must exist
+            if node.has_copy_from():
+                if self.__node_kind( node.get_copy_from_rev(),
+                                     node.get_copy_from_path() ) == None:
+                    frompath = "  r%d %s" % ( node.get_copy_from_rev(),
+                            node.get_copy_from_path() )
+                    return [ "Copy-from path doesn't exist.", frompath ]
+            self.__add_node( revnr, node )
+        elif action == "delete":
+            # path must exist
+            if self.__node_kind( revnr, path ) == None:
+                return [ "Node doesn't exist." ]
+            self.__delete_node( revnr, node )
+        else:
+            # path must exist
+            if self.__node_kind( revnr, path ) == None:
+                return [ "Node doesn't exist." ]
+            # replace = delete & add; changes can be ignored
+            if action == "replace" and node.has_copy_from():
+                self.__delete_node( revnr, node )
+                self.__add_node( revnr, node )
+        return None
+
+    def __node_kind( self, revnr, path ):
+        """
+        Returns the kind of a node if it exists, else None.
+
+        @type revnr: int
+        @param revnr: Current revision number.
+        @type node: string
+        @param node: Path of a node.
+        @rtype: string
+        @return: "D" for dirs, "F" for files or None.
+        """
+        if not self.__history.has_key( path ):
+            return None
+        nodehist = self.__history[ path ]
+        i = self.__rev_index( nodehist, revnr )
+        if i == None:
+            return None
+        return nodehist[0][0]
+
+    def __rev_index( self, nodehist, revnr ):
+        """
+        Returns the index into the node history or None.
+
+        @type nodehist: list
+        @param nodehist: History of a node.
+        @type revnr: int
+        @param revnr: Current revision number.
+        """
+        i = len(nodehist) - 1
+        while i > 0 and revnr < nodehist[i][0]:
+            i -= 1
+        if i == 0:
+            return None
+        if revnr > nodehist[i][1] and nodehist[i][1] >= 0:
+            return None
+        return i
+
+    def __add_node( self, revnr, node ):
+        """
+        Adds a node to the history, recursively if it has copy-from path/rev.
+
+        @type revnr: int
+        @param revnr: Current revision number.
+        @type node: SvnDumpNode
+        @param node: Node to add.
+        """
+        path = node.get_path()
+        if not self.__history.has_key( path ):
+            # create revision list for path
+            kind = "D"
+            if node.get_kind() == "file":
+                kind = "F"
+            self.__history[ path ] = [ ( kind ) ]
+        # add revision range
+        self.__history[ path ].append( [ revnr, -1 ] )
+        kind = self.__history[ path ][0][0]
+        # continue only if it's a dir with copy-from
+        if kind == "F" or not node.has_copy_from():
+            return
+        # recursive copy
+        cfpath = node.get_copy_from_path() + "/"
+        cfpathlen = len(cfpath)
+        cfrev = node.get_copy_from_rev()
+        path += "/"
+        for cfnodepath in self.__history.keys()[:]:
+            if cfnodepath.startswith( cfpath ):
+                cfnodehist = self.__history[cfnodepath]
+                i = self.__rev_index( cfnodehist, cfrev )
+                if i != None:
+                    npath = path + cfnodepath[cfpathlen:]
+                    # add new path
+                    if not self.__history.has_key( npath ):
+                        # create revision list for npath
+                        kind = "D"
+                        if node.get_kind() == "file":
+                            kind = "F"
+                        self.__history[ npath ] = [ cfnodehist[0] ]
+                    # add revision range
+                    self.__history[ npath ].append( [ revnr, -1 ] )
+
+
+    def __delete_node( self, revnr, node ):
+        """
+        Deletes a node from the history, recursively if it is a directory.
+
+        @type revnr: int
+        @param revnr: Current revision number.
+        @type node: SvnDumpNode
+        @param node: Node to add.
+        """
+        # set end revision
+        path = node.get_path()
+        self.__history[ path ][-1][1] = revnr - 1
+        kind = self.__history[ path ][0][0]
+        # continue only if it's a dir
+        if kind == "F":
+            return
+        # recursive delete
+        path += "/"
+        for nodepath in self.__history.keys()[:]:
+            if nodepath.startswith( path ):
+                nodehist = self.__history[nodepath]
+                if nodehist[-1][1] == -1:
+                    nodehist[-1][1] = revnr - 1
 
 def svndump_check_cmdline( appname, args ):
     """
@@ -279,6 +488,9 @@ def svndump_check_cmdline( appname, args ):
     usage = "usage: %s [options] dumpfiles..." % appname
     parser = OptionParser( usage=usage, version="%prog "+__version )
     check = SvnDumpCheck()
+    parser.add_option( "-a", "--check-actions",
+                       action="store_true", dest="check_actions", default=False,
+                       help="check actions like add/change/delete" )
     parser.add_option( "-d", "--check-dates",
                        action="store_true", dest="check_dates", default=False,
                        help="check that svn:date increases" )
@@ -291,6 +503,9 @@ def svndump_check_cmdline( appname, args ):
     (options, args) = parser.parse_args( args )
 
     checks = False
+    if options.check_actions or options.check_all:
+        check.set_check_actions( True )
+        checks = True
     if options.check_dates or options.check_all:
         check.set_check_dates( True )
         checks = True
