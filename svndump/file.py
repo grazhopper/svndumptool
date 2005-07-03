@@ -57,7 +57,7 @@ class SvnDumpFile:
         # revision properties
         self.__rev_props = {}
         # nodes of the revision (files, dirs)
-        self.__nodes = []
+        self.__nodes = ListDict()
         # offset of a tag list
         self.__tag_start_offset = 0
         # count lines for debugging
@@ -385,7 +385,7 @@ class SvnDumpFile:
             self.__uuid = None
             self.__file = None
             self.__rev_props = None
-            self.__nodes = None
+            self.__nodes.clear()
             self.__state = self.ST_NONE
 
     #------------------------------------------------------------
@@ -428,7 +428,7 @@ class SvnDumpFile:
             self.__rev_props["svn:date"] = self.__set_rev_date( "" )
 
         # read nodes (files, dirs)
-        self.__nodes = []
+        self.__nodes.clear()
         #self.nodeList = []
         tags = self.__get_tag_list()
         while len(tags) != 0:
@@ -467,7 +467,8 @@ class SvnDumpFile:
                 node.set_text_fileobj( self.__file, offset,
                                        int(tags["Text-content-length:"]),
                                        tags["Text-content-md5:"] )
-            self.__nodes.append( node )
+            upath = ( action[0].upper(), path )
+            self.__nodes[upath] = node
             # next one...
             tags = self.__get_tag_list()
 
@@ -594,6 +595,34 @@ class SvnDumpFile:
         @return: The node at the given index.
         """
         return self.__nodes[ index ]
+
+    def get_nodes_by_path( self, path, actions="ACDR" ):
+        """
+        Returns a list of nodes matching path and actions.
+
+        Actions is a string that may contain one or more of the letters
+        A, C, D and R which are the first letters of the actions Add, Change,
+        Delete and Replace.
+
+        @type path: string
+        @param path: Path of the node.
+        @type actions: string
+        @param actions: Actions to search for.
+        """
+
+        nodes = []
+        for a in actions:
+            upath = ( a, path )
+            if self.__nodes.has_key( upath ):
+                nodes.append( self.__nodes[upath] )
+        return nodes
+
+    def get_nodes_iter( self ):
+        """
+        Returns an iterator returning the nodes.
+        """
+
+        return self.__nodes.itervalues()
 
 
     #------------------------------------------------------------
