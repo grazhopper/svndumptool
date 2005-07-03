@@ -499,7 +499,7 @@ def svndump_check_cmdline( appname, args ):
                        help="check md5 sums of the files" )
     parser.add_option( "-A", "--all-checks",
                        action="store_true", dest="check_all", default=False,
-                       help="check md5 sums of the files" )
+                       help="do all checks" )
     (options, args) = parser.parse_args( args )
 
     checks = False
