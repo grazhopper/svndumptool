@@ -8,8 +8,11 @@ written in python (tested with python 2.3.4 on linux).
 
 It has the following commands:
 
+ * check        check a dumpfile
+ * copy         copy a dumpfile
  * diff         show differences between two dump files
  * eolfix       fix EOL of text files in a dump
+ * export       export files from a dumpfile
  * merge        merge dump files
 
 Currently it's homepage is (I hope that it gets included into the main
@@ -28,6 +31,42 @@ svndumptool.py command [options] [dumpfiles...]
 Only Version 2 dump files can be processed with this tool!
 (Version 2 dumps are those created with svn 1.0 or with svn 1.1 without
  the --deltas option)
+
+
+
+Check
+-----
+
+Checks a dumpfile. At the moment only md5 sums and dates can be checked.
+
+svndumptool.py check [options] dumpfile
+
+options:
+  --version          show program's version number and exit
+  -h, --help         show this help message and exit
+  -d, --check-dates  check that svn:date increases
+  -m, --check-md5    check md5 sums of the files
+  -A, --all-checks   check md5 sums of the files
+
+Known bugs:
+ * None
+
+
+
+Copy
+----
+
+Copies a dump file. Doesn't sound like that makes sense but it's a useful
+test of svndump classes.
+
+svndumptool.py copy [options] source destination
+
+options:
+  --version   show program's version number and exit
+  -h, --help  show this help message and exit
+
+Known bugs:
+ * None
 
 
 
@@ -101,6 +140,25 @@ Known bugs:
  * Produces temp files in the current directory (named tmpnodeN).
  * Diff shows a few Text changes after eolfix !?!
    
+
+
+Export
+------
+
+Exports files from a dumpfile.
+
+svndumptool.py export [options] dumpfile
+
+options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -e REV REPOSPATH FILENAME, --export= REV REPOSPATH FILENAME
+                        adds a file to export.
+  -dDIR, --directory=DIR
+                        set the directory for the exported files.
+
+Known bugs:
+ * None
 
 
 

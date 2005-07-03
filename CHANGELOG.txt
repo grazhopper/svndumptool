@@ -2,6 +2,14 @@
 Changelog of svndumptool
 ========================
 
+0.3.0: (not released yet)
+
+ - Using tuples for revision dates now.
+ - Removed the rev date adjustement.
+ - Made UUID optional for processing dumps created by cvs2svn.
+ - Replaced node list by ListDict and added new get_node functions.
+ - Added new commands check, copy and export.
+
 
 0.2.1: Bugfix release (2005-07-02)
 

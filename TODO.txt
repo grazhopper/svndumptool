@@ -2,12 +2,9 @@
 TODO list for svndumptool
 =========================
 
- * add a 'check' command for checking dump files
-   (md5 sums, increasing svn:date, what else?)
  * add an option for setting the date of rev 0 when merging
  * eolfix dryrun should check EOL's
  * show the source of a revision when merging
- * fix get_rev_date() when reading files
  * merge: make the root renamable too
- * make UUID optional
+ * check that svn:date and __rev_date are always the same
 
