@@ -416,7 +416,7 @@ def __svndump_merge_example( option, opt, value, parser, *args ):
     """
 
     print ""
-    print "svndumpmerge.py \\"
+    print args[2] + " \\"
     print "  -i proj1.dmp \\"
     print "  -r trunk trunk/proj1 -r tags tags/proj1 -r branches branches/proj1 \\"
     print "  -i proj2.dmp \\"
@@ -458,7 +458,7 @@ def svndump_merge_cmdline( appname, args ):
     vars["fileIndex"] = -1
     vars["outFileSet"] = 0
     vars["logMsgSet"] = 0
-    cbargs = ( merge, vars )
+    cbargs = ( merge, vars, appname )
     parser.add_option( "-i", "--input-file",
                        action="callback", callback=__svndump_merge_opt_i,
                        callback_args=cbargs,
