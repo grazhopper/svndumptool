@@ -27,6 +27,8 @@ from svndump import __version
 from svndump.diff import svndump_diff_cmdline
 from svndump.merge import svndump_merge_cmdline
 from svndump.eolfix import svndump_eol_fix_cmdline
+from svndump.tools import svndump_copy_cmdline, svndump_export_cmdline, \
+                          svndump_check_cmdline
 
 def __help( appname, args ):
     print ""
@@ -34,7 +36,10 @@ def __help( appname, args ):
     print ""
     print "  commands:"
     print "    diff         show differences between two dump files"
+    print "    check        check a dumpfile"
+    print "    copy         copy a dumpfile"
     print "    eolfix       fix EOL of text files in a dump"
+    print "    export       export files from a dumpfile"
     print "    merge        merge dump files"
     print "    --version    print the version"
     print ""
@@ -49,7 +54,10 @@ def __print_version( appname, args ):
 if __name__ == '__main__':
     funcs = {
         "diff":     svndump_diff_cmdline,
+        "check":    svndump_check_cmdline,
+        "copy":     svndump_copy_cmdline,
         "eolfix":   svndump_eol_fix_cmdline,
+        "export":   svndump_export_cmdline,
         "merge":    svndump_merge_cmdline
     }
     appname = sys.argv[0].replace( "\\", "/" )
