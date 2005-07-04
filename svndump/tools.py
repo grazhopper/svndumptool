@@ -627,3 +627,202 @@ def svndump_log_cmdline( appname, args ):
             rc = 1
     return rc
 
+
+#-------------------------------------------------------------------------------
+# join
+
+def join_dumpfiles( inputlist, outfilename ):
+    """
+    Joins dumpfiles.
+
+    @type inputlist: list
+    @param inputlist: A list containing the input filenames.
+    @type outfilename: string
+    @param outfilename: Name of the output dumpfile.
+    @rtype: int
+    @return: 0 for success.
+    """
+
+    outdump = None
+    noutrev = 0
+    lastrev = -1
+    for filename in inputlist:
+        print "reading %s ..." % filename
+        ninrev = 0
+        indump = SvnDumpFile()
+        indump.open( filename )
+        hasrev = indump.read_next_rev()
+        if hasrev:
+            if outdump == None:
+                outdump = SvnDumpFile()
+                if indump.get_rev_nr() == 0:
+                    # create new dump with revision 0
+                    outdump.create_with_rev_0( outfilename, indump.get_uuid(),
+                                indump.get_rev_date_str() )
+                    hasrev = indump.read_next_rev()
+                else:
+                    # create new dump starting with the
+                    # same revNr as the original dump
+                    outdump.create_with_rev_n( outfilename, indump.get_uuid(),
+                                indump.get_rev_nr() )
+            else:
+                # check rev number
+                if indump.get_rev_nr() == 0:
+                    hasrev = indump.read_next_rev()
+                if hasrev:
+                    if (lastrev + 1) != indump.get_rev_nr():
+                        print "renumbering of revisions not supported."
+                        print "last rev was %d, next is %d." % ( lastrev,
+                            indump.get_rev_nr() )
+                        indump.close()
+                        outdump.close()
+                        return 1
+            while hasrev:
+                outdump.add_rev_from_dump( indump )
+                ninrev += 1
+                lastrev = indump.get_rev_nr()
+                hasrev = indump.read_next_rev()
+        indump.close()
+        print "  copied %d revisions." % ninrev
+        noutrev += ninrev
+    outdump.close()
+    print "wrote %d revisions, last was r%d." % ( noutrev, lastrev )
+
+def svndump_join_cmdline( appname, args ):
+    """
+    Parses the commandline and executes the join.
+
+    Usage:
+
+        >>> svndump_join_cmdline( sys.argv[0], sys.argv[1:] )
+
+    @type appname: string
+    @param appname: Name of the application (used in help text).
+    @type args: list( string )
+    @param args: Commandline arguments.
+    @rtype: integer
+    @return: Return code (0 = OK).
+    """
+
+    usage = "usage: %s -o outputfile dumpfiles..." % appname
+    parser = OptionParser( usage=usage, version="%prog "+__version )
+    parser.add_option( "-o", "--output-file",
+                       action="store", type="string",
+                       dest="outfile", default=None,
+                       help="set the name of the output dumpfile." )
+    (options, args) = parser.parse_args( args )
+
+    if options.outfile == None:
+        print "please specify the output dumpfile (option -o)."
+        return 1
+    if len(args) == 0:
+        print "please specify at least one input dumpfile."
+        return 1
+
+    return join_dumpfiles( args, options.outfile )
+
+#-------------------------------------------------------------------------------
+# split
+
+def split_dumpfiles( inputfilename, outlist ):
+    """
+    Joins dumpfiles.
+
+    @type inputlist: list
+    @param inputlist: A list containing the input filenames.
+    @type outfilename: string
+    @param outfilename: Name of the output dumpfile.
+    @rtype: int
+    @return: 0 for success.
+    """
+
+    if len(outlist) == 0:
+        return 0
+
+    outlist = outlist[:]
+    outlist.sort()
+    parallel = False
+    for i in range( 0, len(outlist)-1 ):
+        if outlist[i][1] > outlist[i+1][0]:
+            parallel = True
+            break
+
+    if not parallel:
+        indump = SvnDumpFile()
+        indump.open( inputfilename )
+        index = 0
+        startrev = outlist[index][0]
+        endrev = outlist[index][1]
+        outfile = outlist[index][2]
+        outdump = None
+        while indump.read_next_rev():
+            revnr = indump.get_rev_nr()
+            if outdump == None:
+                if revnr >= startrev:
+                    outdump = SvnDumpFile()
+                    if revnr == 0:
+                        # create new dump with revision 0
+                        outdump.create_with_rev_0( outfile, indump.get_uuid(),
+                                    indump.get_rev_date_str() )
+                    else:
+                        # create new dump starting with the
+                        # same revNr as the original dump
+                        outdump.create_with_rev_n( outfile, indump.get_uuid(),
+                                    indump.get_rev_nr() )
+            if outdump != None:
+                # have an output file, copy the revision if revnr > 0
+                if revnr > 0:
+                    outdump.add_rev_from_dump( indump )
+                if revnr >= endrev:
+                    # end revision reached
+                    outdump.close()
+                    outdump = None
+                    index += 1
+                    if index >= len(outlist):
+                        # done.
+                        break
+                    # next range
+                    startrev = outlist[index][0]
+                    endrev = outlist[index][1]
+                    outfile = outlist[index][2]
+        if outdump != None:
+            outdump.close()
+        indump.close()
+    else:
+        print "overlapping revision ranges not supported (yet)."
+        return 1
+    return 0
+
+def svndump_split_cmdline( appname, args ):
+    """
+    Parses the commandline and executes the split.
+
+    Usage:
+
+        >>> svndump_split_cmdline( sys.argv[0], sys.argv[1:] )
+
+    @type appname: string
+    @param appname: Name of the application (used in help text).
+    @type args: list( string )
+    @param args: Commandline arguments.
+    @rtype: integer
+    @return: Return code (0 = OK).
+    """
+
+    usage = "usage: %s inputfile [startrev endrev filename]..." % appname
+    parser = OptionParser( usage=usage, version="%prog "+__version )
+    (options, args) = parser.parse_args( args )
+
+    if len(args) == 0:
+        return 0
+    if (len(args) % 3) != 1:
+        print "illegal number of args."
+        return 0
+
+    infile = args[0]
+    outlist = []
+    for i in range( 1, len(args), 3 ):
+        outlist.append( ( int(args[i]), int(args[i+1]), args[i+2] ) )
+
+    return split_dumpfiles( infile, outlist )
+

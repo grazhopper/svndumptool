@@ -8,7 +8,7 @@ Changelog of svndumptool
  - Removed the rev date adjustement.
  - Made UUID optional for processing dumps created by cvs2svn.
  - Replaced node list by ListDict and added new get_node functions.
- - Added new commands check, copy, export and log.
+ - Added new commands check, copy, export, join, log and split.
 
 
 0.2.1: Bugfix release (2005-07-02)
