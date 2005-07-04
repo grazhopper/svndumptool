@@ -14,11 +14,11 @@ It has the following commands:
  * eolfix       fix EOL of text files in a dump
  * export       export files from a dumpfile
  * merge        merge dump files
+ * log          show the log of a dumpfile
 
-Currently it's homepage is (I hope that it gets included into the main
-subversion repository):
+It's homepage is:
 
-  http://queen.borg.ch:81/svn/repos/trunk/svn/svndumptool/
+  http://queen.borg.ch/svn/repos/trunk/svn/svndumptool/
 
 
 
@@ -37,16 +37,17 @@ Only Version 2 dump files can be processed with this tool!
 Check
 -----
 
-Checks a dumpfile. At the moment only md5 sums and dates can be checked.
+Checks a dumpfile.
 
-svndumptool.py check [options] dumpfile
+svndumptool.py check [options] dumpfiles...
 
 options:
-  --version          show program's version number and exit
-  -h, --help         show this help message and exit
-  -d, --check-dates  check that svn:date increases
-  -m, --check-md5    check md5 sums of the files
-  -A, --all-checks   check md5 sums of the files
+  --version            show program's version number and exit
+  -h, --help           show this help message and exit
+  -a, --check-actions  check actions like add/change/delete
+  -d, --check-dates    check that svn:date increases
+  -m, --check-md5      check md5 sums of the files
+  -A, --all-checks     do all checks
 
 Known bugs:
  * None
@@ -168,6 +169,8 @@ Merge
 Merges multiple dumpfiles into one. It does this by reading all dumpfiles
 at the same time and always adding the revision with the oldest revision
 date to the output dumpfile.
+Use 'svndumptool.py check -a -d dumpfile' to check that actions and dates
+in the merged file make sense.
 
 svndumptool.py merge [options]
 
@@ -190,6 +193,21 @@ Known bugs:
  * There's no warning when a dumpfile does not have monotonic increasing
    revision dates. Use 'svndumptool.py check -d dumpfile' to check the
    revision dates of a dumpfile.
+
+
+
+Log
+---
+
+Shows the log of a dumpfile in (almost) the same format as svn log.
+
+svndumptool.py log [options] dumpfiles...
+
+options:
+  --version      show program's version number and exit
+  -h, --help     show this help message and exit
+  -v, --verbose  verbose output
+
 
 
 

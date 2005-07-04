@@ -7,4 +7,5 @@ TODO list for svndumptool
  * show the source of a revision when merging
  * merge: make the root renamable too
  * check that svn:date and __rev_date are always the same
+ * move tests from svndumptest.py into a package and add more tests.
 
