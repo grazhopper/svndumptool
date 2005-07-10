@@ -236,8 +236,6 @@ class SvnDumpCheck:
         self.__history = {}
 
         while dump.read_next_rev():
-            if dump.get_rev_nr() >= 3055:
-                break
             self.__next_rev()
             if self.__check_dates:
                 date = dump.get_rev_date()
