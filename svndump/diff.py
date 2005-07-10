@@ -527,7 +527,9 @@ class SvnDumpDiff:
 
             # compare rev date
             if dump1.get_rev_date() != dump2.get_rev_date():
-                callback.rev_diff( "RevDate", dump1.get_rev_date(), dump2.get_rev_date() )
+                callback.rev_diff( "RevDate",
+                    str( dump1.get_rev_date() ),
+                    str( dump2.get_rev_date() ) )
             if dump1.get_rev_date_str() != dump2.get_rev_date_str():
                 callback.rev_diff( "RevDateStr", dump1.get_rev_date_str(), dump2.get_rev_date_str() )
 
