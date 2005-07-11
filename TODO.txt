@@ -2,10 +2,22 @@
 TODO list for svndumptool
 =========================
 
- * add an option for setting the date of rev 0 when merging
- * eolfix dryrun should check EOL's
- * show the source of a revision when merging
- * merge: make the root renamable too
- * check that svn:date and __rev_date are always the same
- * move tests from svndumptest.py into a package and add more tests.
+ * Add an option for setting the date of rev 0 when merging.
+ * Eolfix dryrun should check EOL's.
+ * Merge: make the root renamable too.
+ * Check that svn:date and __rev_date are always the same.
+ * Move tests from svndumptest.py into a package and add more tests...
+ * Output an error if a file exists that should be opened for writing.
+ * Cleanup temp files.
+
+
+Ideas:
+
+ * New command 'filter', same as svndumpfilter.
+ * New command 'edit' which can do many modifications.
+ * Make an abstract base class for SvnDumpFile (maybe SvnDumpReader)
+   and make SvnDumpMerge, SvnDumpEolFix, SvnDumpFilter and SvnDumpEdit
+   subclasses of it. Those commands can then be chained, something like:
+   SvnDumpFile -> SvnDumpEolFix -> copy_dump_file()
+ * Streamy versions of SvnDumpFile and SvnDumpNode.
 
