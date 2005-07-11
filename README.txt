@@ -18,8 +18,16 @@ It has the following commands:
 
 It's homepage is:
 
-  http://queen.borg.ch/svn/repos/trunk/svn/svndumptool/
+  http://queen.borg.ch/subversion/svndumptool/
 
+
+
+Installing
+==========
+
+Unpack the tarball, cd into the directory and run the following command:
+
+./setup.py install
 
 
 
@@ -256,5 +264,5 @@ The python classes are documented using epydoc
 To generate the HTML docs just enter the followin commands:
 
    mkdir doc
-   epydoc --html -o doc svndump
+   epydoc --html -o doc -n "SvnDump 0.3.0" svndump
 
