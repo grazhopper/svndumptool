@@ -2,7 +2,7 @@
 Changelog of svndumptool
 ========================
 
-0.3.0: (not released yet)
+0.3.0: Feature release (2005-07-12)
 
  - Using tuples for revision dates now.
  - Removed the rev date adjustement and fixed related bugs.
