@@ -21,7 +21,7 @@
 #===============================================================================
 
 #import 
-__all__ = [ "common", "node", "file", "diff", "merge", "eolfix" ]
+__all__ = [ "common", "node", "file", "diff", "merge", "eolfix", "tools" ]
 
 import common
 from file import SvnDumpFile

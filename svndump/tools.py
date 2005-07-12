@@ -724,12 +724,12 @@ def svndump_join_cmdline( appname, args ):
 
 def split_dumpfiles( inputfilename, outlist ):
     """
-    Joins dumpfiles.
+    Splits a dumpfile.
 
-    @type inputlist: list
-    @param inputlist: A list containing the input filenames.
-    @type outfilename: string
-    @param outfilename: Name of the output dumpfile.
+    @type inputfilename: string
+    @param inputfilename: Name of the input file.
+    @type outlist: list
+    @param outlist: List of tuples containing start revnr, end revnr and filename.
     @rtype: int
     @return: 0 for success.
     """
