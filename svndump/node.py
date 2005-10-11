@@ -56,7 +56,7 @@ class SvnDumpNode:
            action != "change" and action != "replace":
             raise SvnDumpException, "Unknown action '%s'." % action
         # check kind
-        if action == "delete":
+        if action != "change":
             if kind != "" and kind != "file" and kind != "dir":
                 raise SvnDumpException, "Unknown kind '%s'" % kind
         else:
@@ -243,8 +243,7 @@ class SvnDumpNode:
         @param value: Value of the property.
         """
 
-        # +++ weird check: self.__action == "" !?!
-        if self.__action == "" or self.__action == "delete":
+        if self.__action == "delete":
             raise SvnDumpException, "Cannot set properties for action '%s'" \
                     % self.__action
         if self.__properties == None:
@@ -258,8 +257,7 @@ class SvnDumpNode:
         @type name: string
         @param name: Name of the property to delete."""
 
-        # +++ weird check: self.__action == "" !?!
-        if self.__action == "" or self.__action == "delete":
+        if self.__action == "delete":
             raise SvnDumpException, "Cannot delete properties for action '%s'" \
                     % self.__action
         if self.__properties != None:
@@ -276,8 +274,7 @@ class SvnDumpNode:
         @param properties: A dict containing the properties.
         """
 
-        # +++ weird check: self.__action == "" !?!
-        if self.__action == "" or self.__action == "delete":
+        if self.__action == "delete":
             raise SvnDumpException, "Cannot set properties for action '%s'" \
                     % self.__action
         self.__properties = properties
@@ -298,9 +295,12 @@ class SvnDumpNode:
         @param delete: When True delete the file.
         """
 
-        if self.__action == "" or self.__action == "delete":
+        if self.__action == "delete":
             raise SvnDumpException, "Cannot set text for action '%s'" \
                     % self.__action
+        if self.__kind != "file":
+            raise SvnDumpException, "Cannot set text for kind '%s'" \
+                    % self.__kind
         self.__file_name = filename
         self.__file_offset = 0
         # hmm, no destructors, how to delete that damn temp file ? +++
@@ -329,9 +329,12 @@ class SvnDumpNode:
         @param md5: MD5 sum of the text.
         """
 
-        if self.__action == "" or self.__action == "delete":
+        if self.__action == "delete":
             raise SvnDumpException, "Cannot set text for action '%s'" \
                     % self.__action
+        if self.__kind != "file":
+            raise SvnDumpException, "Cannot set text for kind '%s'" \
+                    % self.__kind
         self.__file_obj = fileobj
         self.__file_offset = offset
         self.__text_len = length
@@ -349,9 +352,12 @@ class SvnDumpNode:
         @param node: An other node.
         """
 
-        if self.__action == "" or self.__action == "delete":
+        if self.__action == "delete":
             raise SvnDumpException, "Cannot set text for action '%s'" \
                     % self.__action
+        if self.__kind != "file":
+            raise SvnDumpException, "Cannot set text for kind '%s'" \
+                    % self.__kind
         self.__file_name = node.__file_name
         # dunno how to delete temp file so no special action here +++
         self.__file_delete = node.__file_delete

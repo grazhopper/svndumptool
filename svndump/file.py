@@ -454,10 +454,10 @@ class SvnDumpFile:
             # add node
             path = tags["Node-path:"]
             action = tags["Node-action:"]
-            if action == "delete":
-                node = SvnDumpNode( path, action, "" )
-            else:
-                node = SvnDumpNode( path, action, tags["Node-kind:"] )
+            kind = ""
+            if tags.has_key( "Node-kind:" ):
+                kind = tags["Node-kind:"]
+            node = SvnDumpNode( path, action, kind )
             if properties != None:
                 node.set_properties( properties )
             if tags.has_key( "Node-copyfrom-path:" ):
@@ -705,7 +705,10 @@ class SvnDumpFile:
             self.__file.write( "Node-action: " + action + "\n" )
         else:
             # other actions than delete always have kind and action
-            self.__file.write( "Node-kind: " + node.get_kind() + "\n" )
+            # or maybe not, cvs2svn doesn't write kind for copied nodes
+            kind = node.get_kind()
+            if len(kind) > 0:
+                self.__file.write( "Node-kind: %s\n" % kind )
             self.__file.write( "Node-action: " + action + "\n" )
             # copied ?
             if node.get_copy_from_rev() != 0:
