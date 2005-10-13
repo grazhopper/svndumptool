@@ -735,17 +735,16 @@ class SvnDumpFile:
 
         # write the node
         self.__file.write( "Node-path: " + node.get_path() + "\n" )
+
+        # write kind if we know it (cvs2svn emits add's with copy-from
+        # without kind so we do this here independent of the action)
+        kind = node.get_kind()
+        if len(kind) > 0:
+            self.__file.write( "Node-kind: %s\n" % kind )
+
         action = node.get_action()
-        if action == "delete":
-            # delete needs only the action
-            self.__file.write( "Node-action: " + action + "\n" )
-        else:
-            # other actions than delete always have kind and action
-            # or maybe not, cvs2svn doesn't write kind for copied nodes
-            kind = node.get_kind()
-            if len(kind) > 0:
-                self.__file.write( "Node-kind: %s\n" % kind )
-            self.__file.write( "Node-action: " + action + "\n" )
+        self.__file.write( "Node-action: " + action + "\n" )
+        if action != "delete":
             # copied ?
             if node.get_copy_from_rev() != 0:
                 self.__file.write( "Node-copyfrom-rev: %d\n" % \
