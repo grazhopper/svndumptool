@@ -48,15 +48,8 @@ def copy_dump_file( srcfile, dstfile ):
 
     hasrev = srcdmp.read_next_rev()
     if hasrev:
-        if srcdmp.get_rev_nr() == 0:
-            # create new dump with revision 0
-            dstdmp.create_with_rev_0( dstfile, srcdmp.get_uuid(),
-                        srcdmp.get_rev_date_str() )
-            hasrev = srcdmp.read_next_rev()
-        else:
-            # create new dump starting with the same revNr as the original dump
-            dstdmp.create_with_rev_n( dstfile, srcdmp.get_uuid(),
-                        srcdmp.get_rev_nr() )
+        # create the dumpfile
+        dstdmp.create_like( dstfile, srcdmp )
         # now copy all the revisions
         while hasrev:
             dstdmp.add_rev_from_dump( srcdmp )

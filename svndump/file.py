@@ -371,6 +371,39 @@ class SvnDumpFile:
         # done initializing
         self.__state = self.ST_CREATE
 
+    def create_like( self, filename, srcfile ):
+        """
+        Creates this dumpfile like srcfile.
+
+        If the current revision number of srcfile is zero create_with_rev_0()
+        is called on this dumpfile and read_next_rev() is called on srcfile.
+
+        If the current revision number of srcdump is greater than zero
+        create_with_rev_n() is called.
+
+        In both cases True is returned if srcdump contains a revision and
+        False if srcdump reached EOF.
+
+        @type filename: string
+        @param filename: Name of the new dump file.
+        @type srcfile: SvnDumpFile
+        @param srcfile: A dumpfile.
+        @rtype: bool
+        @return: False if EOF occured on srcfile.
+        """
+
+        hasrev = srcfile.has_revision()
+        if srcfile.get_rev_nr() == 0:
+            # create new dump with revision 0
+            self.create_with_rev_0( filename, srcfile.get_uuid(),
+                        srcfile.get_rev_date_str() )
+            srcfile.read_next_rev()
+        else:
+            # create new dump starting with the same revNr as srcdump
+            self.create_with_rev_n( filename, srcfile.get_uuid(),
+                        srcfile.get_rev_nr() )
+        return srcfile.has_revision()
+
     def close( self ):
         """
         Close this svn dump file.
@@ -394,6 +427,9 @@ class SvnDumpFile:
     def read_next_rev( self ):
         """
         Read the next revision.
+
+        @rtype: bool
+        @return: False if EOF occured.
         """
 
         # check state
@@ -404,7 +440,7 @@ class SvnDumpFile:
         # check for end of file
         if self.__file_eof:
             self.__state = self.ST_EOF
-            return 0
+            return False
 
         # go to start of revision
         if self.__rev_start_offset != self.__file.tell():
@@ -473,7 +509,7 @@ class SvnDumpFile:
             tags = self.__get_tag_list()
 
         self.__rev_start_offset = self.__file.tell()
-        return 1
+        return True
 
     def has_revision( self ):
         """
