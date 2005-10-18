@@ -518,6 +518,7 @@ class SvnDumpDiff:
             # compare rev numbers
             if dump1.get_rev_nr() != dump2.get_rev_nr():
                 callback.rev_diff( "RevNr", dump1.get_rev_nr(), dump2.get_rev_nr() )
+                # error has been reported so set both flags to false
                 hasrev1 = False
                 hasrev2 = False
                 break
@@ -546,7 +547,7 @@ class SvnDumpDiff:
             hasrev2 = dump2.read_next_rev()
 
         if hasrev1 or hasrev2:
-            print "random error ;-)"
+            print "random error ;-) (different rev nr or EOF of one file)"
 
         # done.
         callback.compare_done()
