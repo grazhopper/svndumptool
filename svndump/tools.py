@@ -522,6 +522,96 @@ def svndump_check_cmdline( appname, args ):
     return rc
 
 #-------------------------------------------------------------------------------
+# ls
+
+class SvnDumpLs:
+    """
+    A class for listing files in a dump.
+    """
+
+    def __init__( self, revNr ):
+        """
+        Initialize.
+        """
+
+        self.revNr = revNr
+
+    def execute( self, dumpfilename ):
+        """
+        Print log of a dump file.
+
+        @type dumpfilename: string
+        @param dumpfilename: Name of the file to log.
+        """
+
+        dump = SvnDumpFile()
+        dump.open( dumpfilename )
+        actions = { "add":"A", "change":"M", "delete":"D", "replace":"R" }
+        lines = ""
+
+        while dump.read_next_rev():
+            revnr = dump.get_rev_nr()
+            if revnr == self.revNr or self.revNr == -1:
+                lines = ""
+                for node in dump.get_nodes_iter():
+                    action = actions[node.get_action()]
+                    path = node.get_path()
+                    if path == "" or path[0] != "/":
+                        path = "/" + path
+                    if node.has_copy_from():
+                        fpath = node.get_copy_from_path()
+                        frev = node.get_copy_from_rev()
+                        if fpath == "" or fpath[0] != "/":
+                            fpath = "/" + fpath
+                        path += " (from %s:%d)" % ( fpath, frev )
+                    lines += "   %s %s\n" % ( action, path )
+                if revnr == self.revNr:
+                    print lines,
+                    lines = ""
+                    break
+        if len(lines) > 0:
+            print lines,
+
+        dump.close()
+        return 0
+
+def svndump_ls_cmdline( appname, args ):
+    """
+    Parses the commandline and executes the ls.
+
+    Usage:
+
+        >>> svndump_ls_cmdline( sys.argv[0], sys.argv[1:] )
+
+    @type appname: string
+    @param appname: Name of the application (used in help text).
+    @type args: list( string )
+    @param args: Commandline arguments.
+    @rtype: integer
+    @return: Return code (0 = OK).
+    """
+
+    usage = "usage: %s [options] dumpfiles..." % appname
+    parser = OptionParser( usage=usage, version="%prog "+__version )
+    parser.add_option( "-r", "--revision",
+                       action="store", type="int",
+                       dest="revnr", default=-1,
+                       help="revision number" )
+    (options, args) = parser.parse_args( args )
+
+    log = SvnDumpLs( options.revnr )
+
+    if len(args) == 1:
+        return log.execute( args[0] )
+    elif len(args) == 0:
+        print "Specify a dump file."
+        return 1
+    else:
+        print "Specify only one dump file."
+        return 1
+
+
+#-------------------------------------------------------------------------------
 # log
 
 class SvnDumpLog:
@@ -536,6 +626,9 @@ class SvnDumpLog:
 
         # verbose
         self.__verbose = False
+        # revision range
+        self.__from_rev = -1
+        self.__to_rev = 2000000000
 
     def set_verbose( self, verbose ):
         """
@@ -546,6 +639,40 @@ class SvnDumpLog:
         """
 
         self.__verbose = verbose
+
+    def set_revision( self, revision ):
+        """
+        Set the revision range to the given value.
+
+        @type verbose: string
+        @param verbose: A revision number or a range (X:Y).
+        """
+
+        if revision == None:
+            return True
+        if len(revision) == 0:
+            return True
+        parts = revision.split( ":" )
+        n = len(parts)
+        if n == 1:
+            try:
+                self.__from_rev = int(parts[0])
+            except ValueError:
+                print "Wrong format of revision argument '%s'" % revision
+                return False
+            self.__to_rev = self.__from_rev
+        elif n == 2:
+            try:
+                self.__from_rev = int(parts[0])
+                if parts[1] != "HEAD":
+                    self.__to_rev = int(parts[1])
+            except ValueError:
+                print "Wrong format of revision argument '%s'" % revision
+                return False
+        else:
+            print "Wrong format of revision argument '%s'" % revision
+            return False
+        return True
 
     def execute( self, dumpfilename ):
         """
@@ -564,30 +691,31 @@ class SvnDumpLog:
 
         while dump.read_next_rev():
             revnr = dump.get_rev_nr()
-            author = dump.get_rev_author()
-            date = dump.get_rev_date_str()
-            log = dump.get_rev_log()
-            linecnt = len( log.split( "\n" ) )
-            lines = "%d line" % linecnt
-            if linecnt > 1:
-                lines += "s"
-            print line
-            print "r%d | %s | %s | %s" % ( revnr, author, date, lines )
-            if self.__verbose:
-                print "Changed paths:"
-                for node in dump.get_nodes_iter():
-                    action = actions[node.get_action()]
-                    path = node.get_path()
-                    if path == "" or path[0] != "/":
-                        path = "/" + path
-                    if node.has_copy_from():
-                        fpath = node.get_copy_from_path()
-                        frev = node.get_copy_from_rev()
-                        if fpath == "" or fpath[0] != "/":
-                            fpath = "/" + fpath
-                        path += " (from %s:%d)" % ( fpath, frev )
-                    print "   %s %s" % ( action, path )
-            print "\n" + log.rstrip() + "\n"
+            if revnr >= self.__from_rev and revnr <= self.__to_rev:
+                author = dump.get_rev_author()
+                date = dump.get_rev_date_str()
+                log = dump.get_rev_log()
+                linecnt = len( log.split( "\n" ) )
+                lines = "%d line" % linecnt
+                if linecnt > 1:
+                    lines += "s"
+                print line
+                print "r%d | %s | %s | %s" % ( revnr, author, date, lines )
+                if self.__verbose:
+                    print "Changed paths:"
+                    for node in dump.get_nodes_iter():
+                        action = actions[node.get_action()]
+                        path = node.get_path()
+                        if path == "" or path[0] != "/":
+                            path = "/" + path
+                        if node.has_copy_from():
+                            fpath = node.get_copy_from_path()
+                            frev = node.get_copy_from_rev()
+                            if fpath == "" or fpath[0] != "/":
+                                fpath = "/" + fpath
+                            path += " (from %s:%d)" % ( fpath, frev )
+                        print "   %s %s" % ( action, path )
+                print "\n" + log.rstrip() + "\n"
 
         print line
         dump.close()
@@ -612,12 +740,18 @@ def svndump_log_cmdline( appname, args ):
     usage = "usage: %s [options] dumpfiles..." % appname
     parser = OptionParser( usage=usage, version="%prog "+__version )
     log = SvnDumpLog()
+    parser.add_option( "-r", "--revision",
+                       action="store", type="string",
+                       dest="revision", default=None,
+                       help="revision number or range (X:Y)" )
     parser.add_option( "-v", "--verbose",
                        action="store_true", dest="verbose", default=False,
                        help="verbose output" )
     (options, args) = parser.parse_args( args )
 
     log.set_verbose( options.verbose )
+    if not log.set_revision( options.revision ):
+        return 1
 
     rc = 0
     for filename in args:

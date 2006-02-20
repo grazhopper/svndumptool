@@ -29,6 +29,7 @@ from svndump.merge import svndump_merge_cmdline
 from svndump.eolfix import svndump_eol_fix_cmdline
 from svndump.tools import svndump_copy_cmdline, svndump_export_cmdline, \
                           svndump_check_cmdline, svndump_log_cmdline, \
+                          svndump_ls_cmdline, \
                           svndump_join_cmdline, svndump_split_cmdline
 
 __commands = {
@@ -39,6 +40,7 @@ __commands = {
     "export":   svndump_export_cmdline,
     "join":     svndump_join_cmdline,
     "log":      svndump_log_cmdline,
+    "ls":       svndump_ls_cmdline,
     "merge":    svndump_merge_cmdline,
     "split":    svndump_split_cmdline
 }
@@ -59,6 +61,7 @@ def __help( appname, args ):
         print "    export       export files from a dumpfile"
         print "    join         join dumpfiles"
         print "    log          show the log of a dumpfile"
+        print "    ls           list files of a given revision"
         print "    merge        merge dump files"
         print "    split        split dump files"
         print "    --version    print the version"
