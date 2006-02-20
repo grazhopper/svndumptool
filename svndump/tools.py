@@ -546,9 +546,10 @@ class SvnDumpLs:
         @param dumpfilename: Name of the file to log.
         """
 
+        # pass 1: search copy-from revisions
         dump = SvnDumpFile()
         dump.open( dumpfilename )
-        #actions = { "add":"A", "change":"M", "delete":"D", "replace":"R" }
+        copyfromrevs = {}
         filedict = {}
 
         while dump.read_next_rev():
@@ -561,12 +562,46 @@ class SvnDumpLs:
                 path = node.get_path()
                 if path == "" or path[0] != "/":
                     path = "/" + path
+                if action == "add" and node.has_copy_from():
+                    copyfromrevs[node.get_copy_from_rev()] = True
+        dump.close()
+
+        # pass 2: do the work
+        dump = SvnDumpFile()
+        dump.open( dumpfilename )
+        filedict = {}
+
+        while dump.read_next_rev():
+            revnr = dump.get_rev_nr()
+            if revnr > self.revNr:
+                break
+            for node in dump.get_nodes_iter():
+                action = node.get_action()
+                path = node.get_path()
+                if path == "" or path[0] != "/":
+                    path = "/" + path
                 if action == "add":
                     filedict[path] = path
+                    if node.has_copy_from():
+                        frompath = node.get_copy_from_path() + "/"
+                        if frompath[0] != "/":
+                            frompath = "/" + frompath
+                        fromlen = len(frompath)
+                        topath = path + "/"
+                        for path in copyfromrevs[node.get_copy_from_rev()]:
+                            if path.startswith( frompath ):
+                                newpath = topath + path[fromlen:]
+                                filedict[newpath] = newpath
                 elif action == "delete":
-                    # hmm, weird, why is that check needed ?
-                    if filedict.has_key( path ):
-                        del filedict[path]
+                    del filedict[path]
+                    if path[-1] != "/":
+                        path = path + "/"
+                    for subpath in filedict.keys()[:]:
+                        if subpath.startswith( path ):
+                            del filedict[subpath]
+                if copyfromrevs.has_key(revnr):
+                    copyfromrevs[revnr] = filedict.keys()[:]
+        dump.close()
 
         filelist = []
         for path in filedict:
@@ -575,7 +610,6 @@ class SvnDumpLs:
         for path in filelist:
             print path
 
-        dump.close()
         return 0
 
     def old_execute( self, dumpfilename ):
