@@ -535,10 +535,52 @@ class SvnDumpLs:
         """
 
         self.revNr = revNr
+        if revNr == -1:
+            self.revNr = 2000000000
 
     def execute( self, dumpfilename ):
         """
-        Print log of a dump file.
+        Print file list of a dump file.
+
+        @type dumpfilename: string
+        @param dumpfilename: Name of the file to log.
+        """
+
+        dump = SvnDumpFile()
+        dump.open( dumpfilename )
+        #actions = { "add":"A", "change":"M", "delete":"D", "replace":"R" }
+        filedict = {}
+
+        while dump.read_next_rev():
+            revnr = dump.get_rev_nr()
+            if revnr > self.revNr:
+                break
+            for node in dump.get_nodes_iter():
+                #action = actions[node.get_action()]
+                action = node.get_action()
+                path = node.get_path()
+                if path == "" or path[0] != "/":
+                    path = "/" + path
+                if action == "add":
+                    filedict[path] = path
+                elif action == "delete":
+                    # hmm, weird, why is that check needed ?
+                    if filedict.has_key( path ):
+                        del filedict[path]
+
+        filelist = []
+        for path in filedict:
+            filelist.append( path )
+        filelist.sort()
+        for path in filelist:
+            print path
+
+        dump.close()
+        return 0
+
+    def old_execute( self, dumpfilename ):
+        """
+        Print file list of a dump file.
 
         @type dumpfilename: string
         @param dumpfilename: Name of the file to log.
