@@ -571,8 +571,15 @@ class SvnDumpLs:
         dump.open( dumpfilename )
         filedict = {}
 
+        prevrevnr = 0
         while dump.read_next_rev():
             revnr = dump.get_rev_nr()
+            # loop over missing revisions
+            prevrevnr += 1
+            while prevrevnr < revnr:
+                if copyfromrevs.has_key(prevrevnr):
+                    copyfromrevs[prevrevnr] = filedict.keys()[:]
+                prevrevnr += 1
             if revnr > self.revNr:
                 break
             for node in dump.get_nodes_iter():
