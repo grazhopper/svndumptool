@@ -599,8 +599,8 @@ class SvnDumpLs:
                     for subpath in filedict.keys()[:]:
                         if subpath.startswith( path ):
                             del filedict[subpath]
-                if copyfromrevs.has_key(revnr):
-                    copyfromrevs[revnr] = filedict.keys()[:]
+            if copyfromrevs.has_key(revnr):
+                copyfromrevs[revnr] = filedict.keys()[:]
         dump.close()
 
         filelist = []
