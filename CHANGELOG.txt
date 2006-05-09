@@ -2,7 +2,13 @@
 Changelog of svndumptool
 ========================
 
-0.3.0: (not released yet)
+0.4.0: Not released yet.
+
+ - New command 'ls' (Idea by Christian Iversen).
+ - Make cvs2svn created dumps work.
+
+
+0.3.0: Feature release (2005-07-12)
 
  - Using tuples for revision dates now.
  - Removed the rev date adjustement and fixed related bugs.
@@ -22,5 +28,6 @@ Changelog of svndumptool
 
 
 0.2: First public release (2005-03-20)
+
 
 
