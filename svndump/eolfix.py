@@ -32,7 +32,7 @@ __doc__ = """Classes and functions for fixing EOL's in a dump file."""
 
 def eolfix_callback_prop( dumpfile, node, textfiles ):
     """
-    Callbcak function which checks for svn:eol-style property.
+    Callback function which checks for svn:eol-style property.
 
     Returns True if a conversion of the text is needed.
 
