@@ -20,7 +20,7 @@
 #
 #===============================================================================
 
-from os import stat
+from os import stat, remove
 from stat import ST_SIZE
 import md5
 
@@ -94,8 +94,8 @@ class SvnDumpNode:
         Delete method, cleanup temp file if needed.
         """
         if self.__file_delete and self.__file_name != "":
-            # delete temp file ++++
-            pass
+            # delete temp file
+            remove(self.__file_name)
 
     def get_path( self ):
         """
