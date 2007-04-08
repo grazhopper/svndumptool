@@ -30,21 +30,23 @@ from svndump.eolfix import svndump_eol_fix_cmdline
 from svndump.tools import svndump_copy_cmdline, svndump_export_cmdline, \
                           svndump_check_cmdline, svndump_log_cmdline, \
                           svndump_ls_cmdline, \
-                          svndump_join_cmdline, svndump_split_cmdline
+                          svndump_join_cmdline, svndump_split_cmdline, \
+                          svndump_transform_revprop_cmdline
 from svndump.sanitize import svndump_sanitize_cmdline
 
 __commands = {
-    "check":    svndump_check_cmdline,
-    "copy":     svndump_copy_cmdline,
-    "diff":     svndump_diff_cmdline,
-    "eolfix":   svndump_eol_fix_cmdline,
-    "export":   svndump_export_cmdline,
-    "join":     svndump_join_cmdline,
-    "log":      svndump_log_cmdline,
-    "ls":       svndump_ls_cmdline,
-    "merge":    svndump_merge_cmdline,
-    "sanitize": svndump_sanitize_cmdline,
-    "split":    svndump_split_cmdline
+    "check":                svndump_check_cmdline,
+    "copy":                 svndump_copy_cmdline,
+    "diff":                 svndump_diff_cmdline,
+    "eolfix":               svndump_eol_fix_cmdline,
+    "export":               svndump_export_cmdline,
+    "join":                 svndump_join_cmdline,
+    "log":                  svndump_log_cmdline,
+    "ls":                   svndump_ls_cmdline,
+    "merge":                svndump_merge_cmdline,
+    "sanitize":             svndump_sanitize_cmdline,
+    "split":                svndump_split_cmdline,
+    "transform-revprop":    svndump_transform_revprop_cmdline,
 }
 
 def __help( appname, args ):
@@ -56,18 +58,19 @@ def __help( appname, args ):
         print "svndumptool.py command [options]"
         print ""
         print "  commands:"
-        print "    check        check a dumpfile"
-        print "    copy         copy a dumpfile"
-        print "    diff         show differences between two dump files"
-        print "    eolfix       fix EOL of text files in a dump"
-        print "    export       export files from a dumpfile"
-        print "    join         join dumpfiles"
-        print "    log          show the log of a dumpfile"
-        print "    ls           list files of a given revision"
-        print "    merge        merge dump files"
-        print "    sanitize     sanitize dump files"
-        print "    split        split dump files"
-        print "    --version    print the version"
+        print "    check                check a dumpfile"
+        print "    copy                 copy a dumpfile"
+        print "    diff                 show differences between two dump files"
+        print "    eolfix               fix EOL of text files in a dump"
+        print "    export               export files from a dumpfile"
+        print "    join                 join dumpfiles"
+        print "    log                  show the log of a dumpfile"
+        print "    ls                   list files of a given revision"
+        print "    merge                merge dump files"
+        print "    sanitize             sanitize dump files"
+        print "    split                split dump files"
+        print "    transform-revprop    transform a revision property"
+        print "    --version            print the version"
         print ""
         print "  use 'svndumptool.py command -h' for help about the commands."
         print ""

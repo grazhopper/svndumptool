@@ -24,7 +24,7 @@ import sys
 from optparse import OptionParser
 import md5
 
-from svndump import __version, copy_dump_file
+from svndump import __version, copy_dump_file, RevisionPropertyTransformer
 from common import create_svn_date_str
 from file import SvnDumpFile
 
@@ -58,6 +58,37 @@ def svndump_copy_cmdline( appname, args ):
         return 1
 
     copy_dump_file( args[0], args[1] )
+    return 0
+
+
+#-------------------------------------------------------------------------------
+# transform
+
+def svndump_transform_revprop_cmdline( appname, args ):
+    """
+    Parses the commandline and executes the transformation.
+
+    Usage:
+
+        >>> svndump_transform_cmdline( sys.argv[0], sys.argv[1:] )
+
+    @type appname: string
+    @param appname: Name of the application (used in help text).
+    @type args: list( string )
+    @param args: Commandline arguments.
+    @rtype: integer
+    @return: Return code (0 = OK).
+    """
+
+    usage = "usage: %s propname regex replace source destination" % appname
+    parser = OptionParser( usage=usage, version="%prog "+__version )
+    (options, args) = parser.parse_args( args )
+
+    if len( args ) != 5:
+        print "specify exactly one propname to transform, one regex to match the value against,\none replacement string, one source dumpfile and one destination dumpfile."
+        return 1
+
+    copy_dump_file( args[3], args[4],  RevisionPropertyTransformer( args[0], args[1], args[2] ) )
     return 0
 
 
