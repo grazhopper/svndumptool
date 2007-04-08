@@ -31,6 +31,7 @@ from svndump.tools import svndump_copy_cmdline, svndump_export_cmdline, \
                           svndump_check_cmdline, svndump_log_cmdline, \
                           svndump_ls_cmdline, \
                           svndump_join_cmdline, svndump_split_cmdline
+from svndump.sanitize import svndump_sanitize_cmdline
 
 __commands = {
     "check":    svndump_check_cmdline,
@@ -42,6 +43,7 @@ __commands = {
     "log":      svndump_log_cmdline,
     "ls":       svndump_ls_cmdline,
     "merge":    svndump_merge_cmdline,
+    "sanitize": svndump_sanitize_cmdline,
     "split":    svndump_split_cmdline
 }
 
@@ -63,6 +65,7 @@ def __help( appname, args ):
         print "    log          show the log of a dumpfile"
         print "    ls           list files of a given revision"
         print "    merge        merge dump files"
+        print "    sanitize     sanitize dump files"
         print "    split        split dump files"
         print "    --version    print the version"
         print ""

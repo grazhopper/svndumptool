@@ -106,6 +106,14 @@ class SvnDumpNode:
         """
         return self.__path
 
+    def set_path( self, path ):
+        """
+        Sets the path of this node.
+
+        @type path: string
+        @param path: New path of this node."""
+        self.__path = path
+
     def get_action( self ):
         """
         Returns the action of this node.
