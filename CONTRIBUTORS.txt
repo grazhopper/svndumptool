@@ -15,3 +15,6 @@ Bernd Rinn
  - Add setter function for date author log uuid and revprops to SvnDumpFile.
  - Add transform-revprop command.
 
+Christian Iversen
+ - Idea for command 'ls'.
+

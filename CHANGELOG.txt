@@ -4,8 +4,10 @@ Changelog of svndumptool
 
 0.4.0: Not released yet.
 
- - New command 'ls' (Idea by Christian Iversen).
- - Make cvs2svn created dumps work.
+ - New commands 'ls', 'sanitize', 'transform-revprop'.
+ - Make cvs2svn created dumps work (somewhat).
+ - Delete temp files.
+ - Many bugfixes.
 
 
 0.3.0: Feature release (2005-07-12)
