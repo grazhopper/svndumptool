@@ -89,6 +89,8 @@ class SvnDumpExport:
         @param filename: Name of the exported file.
         """
 
+        if repospath.startswith('/'):
+            repospath = repospath[1:]
         if not self.__exports.has_key( revnr ):
             self.__exports[revnr] = {}
         self.__exports[revnr][repospath] = filename
@@ -121,7 +123,7 @@ class SvnDumpExport:
                             saved = True
                             print "  saved as %s" % filename
                     if not saved:
-                        if len(nodes) > 0:
+                        if len(nodes) == 0:
                             print "  not found"
                         else:
                             print "  has no text"

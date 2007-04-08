@@ -4,7 +4,7 @@ TODO list for svndumptool
 
 Bugs:
 
- * export: Ignore leading slash in repos path and check that -d works.
+ * export: check that -d works.
  * check: check that copy-from revision < current revision.
  * merge: leading slash for -x doesn't work.
 
