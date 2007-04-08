@@ -401,8 +401,8 @@ class SvnDumpCheck:
 
         @type revnr: int
         @param revnr: Current revision number.
-        @type node: string
-        @param node: Path of a node.
+        @type path: string
+        @param path: Path of a node.
         @rtype: string
         @return: "D" for dirs, "F" for files or None.
         """
@@ -760,8 +760,8 @@ class SvnDumpLog:
         """
         Set the revision range to the given value.
 
-        @type verbose: string
-        @param verbose: A revision number or a range (X:Y).
+        @type revision: string
+        @param revision: A revision number or a range (X:Y).
         """
 
         if revision == None:

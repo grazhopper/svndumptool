@@ -688,7 +688,7 @@ class SvnDumpFile:
 
         @type name: string
         @param name: Name of the property.
-        @type name: string
+        @type value: string
         @param value: Value of the property.
         """
         if name == "svn:date":
