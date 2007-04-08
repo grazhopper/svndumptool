@@ -1,0 +1,17 @@
+
+This file lists the contributors to svndumptool. Thank you for your work!
+Should I have forgotten to add anyone please tell me.
+
+
+Eli Carter
+ - Delete temp files.
+ - Fix typo in a function comment.
+ - Add sanitize command.
+
+Bernd Rinn
+ - In export command strip leading slashes in repospath.
+ - In export command fix an error message.
+ - Always print revision numbers in diff output.
+ - Add setter function for date author log uuid and revprops to SvnDumpFile.
+ - Add transform-revprop command.
+
