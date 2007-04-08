@@ -9,6 +9,13 @@ Bugs:
  * merge: leading slash for -x doesn't work.
 
 
+Cleanup and possible bugs:
+ * Cleanup temp files: Make sure a temp file is not deleted as long as it
+   is still used (can multiple nodes have the same temp file?).
+ * Cleanup sanitize: use a class instead of global variable option,
+   better handling of temp files.
+
+
 Features:
 
  * Add an option for setting the date of rev 0 when merging.
@@ -17,7 +24,6 @@ Features:
  * Check that svn:date and __rev_date are always the same.
  * Move tests from svndumptest.py into a package and add more tests...
  * Output an error if a file exists that should be opened for writing.
- * Cleanup temp files.
 
 
 Ideas:
