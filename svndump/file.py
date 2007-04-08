@@ -230,18 +230,6 @@ class SvnDumpFile:
         return propStr
 
 
-    def __set_rev_date( self, dateStr ):
-        """
-        Check a date string, set and return a valid one.
-
-        @type dateStr: string
-        @param dateStr: A svn date string.
-        @rtype: string
-        @return: A svn date string.
-        """
-        self.__rev_date = parse_svn_date_str( dateStr )
-        return create_svn_date_str( self.__rev_date )
-
     #------------------------------------------------------------
     #  open / create / close
 
@@ -309,7 +297,7 @@ class SvnDumpFile:
         self.__uuid = uuid
 
         # check rev0date
-        rev0date = self.__set_rev_date( rev0date )
+        rev0date = self.set_rev_date( rev0date )
 
         # open file for writing
         self.__file = open( filename, "wb" )
@@ -458,10 +446,9 @@ class SvnDumpFile:
         if not self.__rev_props.has_key("svn:author"):
             self.__rev_props["svn:author"] = ""
         if self.__rev_props.has_key("svn:date"):
-            self.__rev_props["svn:date"] = self.__set_rev_date(
-                    self.__rev_props["svn:date"] )
+            self.set_rev_date(self.__rev_props["svn:date"] )
         else:
-            self.__rev_props["svn:date"] = self.__set_rev_date( "" )
+            self.set_rev_date( "" )
 
         # read nodes (files, dirs)
         self.__nodes.clear()
@@ -664,6 +651,60 @@ class SvnDumpFile:
     #------------------------------------------------------------
     #  write methods
 
+    def set_rev_date( self, dateStr ):
+        """
+        Check a date string, set and return a valid one.
+
+        @type dateStr: string
+        @param dateStr: A svn date string.
+        @rtype: string
+        @return: A svn date string.
+        """
+        self.__rev_date = parse_svn_date_str( dateStr )
+        self.__rev_props["svn:date"] = create_svn_date_str( self.__rev_date )
+        return self.__rev_props["svn:date"]
+
+    def set_rev_author( self, author):
+        """
+        Set the author of this revision.
+
+        @type author: string
+        @param author: The author to set for this revision.
+        """
+        self._rev_props["svn:author"] = author
+
+    def set_rev_log( self, logMsg):
+        """
+        Set the log message of this revision.
+
+        @type logMsg: string
+        @param logMsg: The log message to set for this revision.
+        """
+        self._rev_props["svn:log"] = logMsg
+
+    def set_rev_prop_value( self, name, value ):
+        """
+        Set the value of the revision property with the specified name to the given value.
+
+        @type name: string
+        @param name: Name of the property.
+        @type name: string
+        @param value: Value of the property.
+        """
+        if name == "svn:date":
+            self.set_rev_date(value)
+        else:
+            self.__rev_props[name] = value
+
+    def set_uuid( self, uuid ):
+        """
+        Returns the UUID of this dump file.
+
+        @type uuid: string
+        @param uuid: UUID to set for this dump file (may be None).
+        """
+        self.__uuid = uuid
+
     def add_rev_from_dump( self, dump ):
         """
         Add the current revision of the specified SvnDumpFile to this one.
@@ -698,13 +739,14 @@ class SvnDumpFile:
         # set rev nr and check rev props
         self.__rev_nr = self.__rev_nr + 1
         if not revProps.has_key("svn:date"):
-            revProps["svn:date"] = self.__set_rev_date( "" )
+            revProps["svn:date"] = self.set_rev_date( "" )
         else:
-            revProps["svn:date"] = self.__set_rev_date( revProps["svn:date"] )
+            revProps["svn:date"] = self.set_rev_date( revProps["svn:date"] )
         if not revProps.has_key("svn:author"):
             revProps["svn:author"] = ""
         if not revProps.has_key("svn:log"):
             revProps["svn:log"] = ""
+        self.__rev_props = revProps
 
         propStr = self.__create_prop_string( revProps )
         # write revision
