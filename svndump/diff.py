@@ -269,6 +269,7 @@ class SvnDumpDiffCallback:
         if show:
             self.diffs = True
             if self.verbosity > 0:
+                self.__print_rev()
                 if not self.__prophdr_printed:
                     self.__prophdr_printed = True
                     print "  Properties:"
@@ -297,6 +298,7 @@ class SvnDumpDiffCallback:
         if show:
             self.diffs = True
             if self.verbosity > 0:
+                self.__print_rev()
                 if not self.__prophdr_printed:
                     self.__prophdr_printed = True
                     print "  Properties:"
@@ -332,6 +334,7 @@ class SvnDumpDiffCallback:
         if show:
             self.diffs = True
             if self.verbosity > 0:
+                self.__print_rev()
                 self.__print_node()
                 print "+   Different %s:" % type
                 print "      dump1: '%s'" % value1
