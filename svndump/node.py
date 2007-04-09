@@ -144,7 +144,7 @@ class SvnDumpNode:
         @return: Value of the property.
         """
         if self.__properties != None and self.__properties.has_key( name ):
-            return self.__properties[key]
+            return self.__properties[name]
         else:
             return None
 
