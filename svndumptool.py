@@ -31,7 +31,8 @@ from svndump.tools import svndump_copy_cmdline, svndump_export_cmdline, \
                           svndump_check_cmdline, svndump_log_cmdline, \
                           svndump_ls_cmdline, \
                           svndump_join_cmdline, svndump_split_cmdline
-from svndump.props import svndump_transform_revprop_cmdline
+from svndump.props import svndump_transform_revprop_cmdline, \
+                          svndump_transform_prop_cmdline
 from svndump.sanitize import svndump_sanitize_cmdline
 
 __commands = {
@@ -46,6 +47,7 @@ __commands = {
     "merge":                svndump_merge_cmdline,
     "sanitize":             svndump_sanitize_cmdline,
     "split":                svndump_split_cmdline,
+    "transform-prop":       svndump_transform_prop_cmdline,
     "transform-revprop":    svndump_transform_revprop_cmdline,
 }
 
@@ -70,6 +72,7 @@ def __help( appname, args ):
         print "    sanitize             sanitize dump files"
         print "    split                split dump files"
         print "    transform-revprop    transform a revision property"
+        print "    transform-prop       transform a node property"
         print "    --version            print the version"
         print ""
         print "  use 'svndumptool.py command -h' for help about the commands."

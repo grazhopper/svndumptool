@@ -1,6 +1,7 @@
 #===============================================================================
 #
 # Copyright (C) 2003 Martin Furter <mf@rola.ch>
+# Copyright (C) 2007 CommProve, Inc (Eli Carter <eli.carter@commprove.com>)
 #
 # This file is part of SvnDumpTool
 #
@@ -79,3 +80,63 @@ def svndump_transform_revprop_cmdline( appname, args ):
 
     copy_dump_file( args[3], args[4],  RevisionPropertyTransformer( args[0], args[1], args[2] ) )
     return 0
+
+class PropertyTransformer:
+    """
+    A class for transforming the properties of a dump file class.
+    """
+
+    def __init__( self, propertyName, regexStr, replaceTemplate ):
+        """
+        Creates a RevisionPropertyTransformer class.
+
+        @type propertyName: string
+        @param propertyName: Name of the property to transform.
+        @type regexStr: string
+        @param regexStr: The regular expression to match the value against.
+        @type replaceTemplate: string
+        @param replaceTemplate: The replacement string (may contain group references, e.g. \1).
+        """
+        self.__property_name = propertyName
+        self.__pattern = re.compile(regexStr, re.M)
+        self.__replace_template = replaceTemplate
+
+    def transform( self, dump ):
+        for node in dump.get_nodes_iter():
+            value = node.get_property(self.__property_name)
+            if value != None:
+                replace = []
+                for matcher in self.__pattern.finditer(value):
+                    if matcher:
+                        replace.append(matcher.expand( self.__replace_template ))
+                replace_str = "\n".join(replace)
+                node.set_property( self.__property_name, replace_str )
+
+def svndump_transform_prop_cmdline( appname, args ):
+    """
+    Parses the commandline and executes the transformation.
+
+    Usage:
+
+        >>> svndump_transform_prop_cmdline( sys.argv[0], sys.argv[1:] )
+
+    @type appname: string
+    @param appname: Name of the application (used in help text).
+    @type args: list( string )
+    @param args: Commandline arguments.
+    @rtype: integer
+    @return: Return code (0 = OK).
+    """
+
+    usage = "usage: %s propname regex replace source destination" % appname
+    parser = OptionParser( usage=usage, version="%prog "+__version )
+    (options, args) = parser.parse_args( args )
+
+    if len( args ) != 5:
+        print "specify exactly one propname to transform, one regex to match the value against,\none replacement string, one source dumpfile and one destination dumpfile."
+        return 1
+
+    copy_dump_file( args[3], args[4],  PropertyTransformer( args[0], args[1], args[2] ) )
+    return 0
+
+
