@@ -7,6 +7,10 @@ Bugs:
  * export: check that -d works.
  * check: check that copy-from revision < current revision.
  * merge: leading slash for -x doesn't work.
+ * possible problems with cvs2svn created dumps and copied path's:
+    - merge: mkdir exclude may fail
+    - check: may output false negatives
+    - diff: may output wrong diffs of node kind
 
 
 Cleanup and possible bugs:
