@@ -17,6 +17,7 @@ Cleanup and possible bugs:
  * Cleanup temp files: Make sure a temp file is not deleted as long as it
    is still used (can multiple nodes have the same temp file?).
  * Cleanup sanitize: better handling of temp files.
+ * Transform-[rev]prop: Use re.sub() function.
 
 
 Features:

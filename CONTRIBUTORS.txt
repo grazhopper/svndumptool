@@ -6,7 +6,8 @@ Should I have forgotten to add anyone please tell me.
 Eli Carter
  - Delete temp files.
  - Fix typo in a function comment.
- - Add sanitize command.
+ - Add sanitize and transform-prop command.
+ - Bugfixes and cleanup.
 
 Bernd Rinn
  - In export command strip leading slashes in repospath.
