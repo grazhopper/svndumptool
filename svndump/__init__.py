@@ -65,33 +65,3 @@ def copy_dump_file( srcfile, dstfile, transformer=None ):
     # cleanup
     srcdmp.close()
     dstdmp.close()
-
-
-class RevisionPropertyTransformer:
-    """
-    A class for transforming the revision properties of a dump file class.
-    """
-
-    def __init__( self, propertyName, regexStr, replaceTemplate ):
-        """
-        Creates a RevisionPropertyTransformer class.
-
-        @type propertyName: string
-        @param propertyName: Name of the property to transform.
-        @type regexStr: string
-        @param regexStr: The regular expression to match the value against.
-        @type replaceTemplate: string
-        @param replaceTemplate: The replacement string (may contain group references, e.g. \1).
-        """
-        self.__property_name = propertyName
-        self.__pattern = re.compile(regexStr)
-        self.__replace_template = replaceTemplate
-        
-    def transform( self, dump ):
-        if dump.has_rev_prop( self.__property_name ):
-            value = dump.get_rev_prop_value( self.__property_name )
-            matcher = self.__pattern.match(value)
-            if matcher:
-                replace_str = matcher.expand( self.__replace_template )
-                dump.set_rev_prop_value( self.__property_name, replace_str )
-

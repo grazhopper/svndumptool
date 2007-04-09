@@ -30,8 +30,8 @@ from svndump.eolfix import svndump_eol_fix_cmdline
 from svndump.tools import svndump_copy_cmdline, svndump_export_cmdline, \
                           svndump_check_cmdline, svndump_log_cmdline, \
                           svndump_ls_cmdline, \
-                          svndump_join_cmdline, svndump_split_cmdline, \
-                          svndump_transform_revprop_cmdline
+                          svndump_join_cmdline, svndump_split_cmdline
+from svndump.props import svndump_transform_revprop_cmdline
 from svndump.sanitize import svndump_sanitize_cmdline
 
 __commands = {
