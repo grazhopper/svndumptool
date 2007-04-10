@@ -54,7 +54,7 @@ __commands = {
 def __help( appname, args ):
     rc = 0
     if len(args) == 1 and __commands.has_key( args[0] ):
-        __commands[args[0]]( appname, [ "-h" ] )
+        __commands[args[0]]( appname + " " + args[0], [ "-h" ] )
     else:
         print ""
         print "svndumptool.py command [options]"
