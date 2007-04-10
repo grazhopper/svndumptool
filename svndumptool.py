@@ -24,20 +24,22 @@
 import sys
 
 from svndump import __version
+from svndump.cvs2svnfix import svndump_cvs2svnfix_cmdline
 from svndump.diff import svndump_diff_cmdline
-from svndump.merge import svndump_merge_cmdline
 from svndump.eolfix import svndump_eol_fix_cmdline
+from svndump.merge import svndump_merge_cmdline
+from svndump.props import svndump_transform_revprop_cmdline, \
+                          svndump_transform_prop_cmdline
+from svndump.sanitize import svndump_sanitize_cmdline
 from svndump.tools import svndump_copy_cmdline, svndump_export_cmdline, \
                           svndump_check_cmdline, svndump_log_cmdline, \
                           svndump_ls_cmdline, \
                           svndump_join_cmdline, svndump_split_cmdline
-from svndump.props import svndump_transform_revprop_cmdline, \
-                          svndump_transform_prop_cmdline
-from svndump.sanitize import svndump_sanitize_cmdline
 
 __commands = {
     "check":                svndump_check_cmdline,
     "copy":                 svndump_copy_cmdline,
+    "cvs2svnfix":           svndump_cvs2svnfix_cmdline,
     "diff":                 svndump_diff_cmdline,
     "eolfix":               svndump_eol_fix_cmdline,
     "export":               svndump_export_cmdline,
@@ -62,6 +64,7 @@ def __help( appname, args ):
         print "  commands:"
         print "    check                check a dumpfile"
         print "    copy                 copy a dumpfile"
+        print "    cvs2svnfix           fix a cvs2svn created dumpfile"
         print "    diff                 show differences between two dump files"
         print "    eolfix               fix EOL of text files in a dump"
         print "    export               export files from a dumpfile"
