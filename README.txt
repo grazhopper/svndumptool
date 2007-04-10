@@ -11,6 +11,7 @@ It has the following commands:
 
  * check                check a dumpfile
  * copy                 copy a dumpfile
+ * cvs2svnfix           fix a cvs2svn created dumpfile
  * diff                 show differences between two dump files
  * eolfix               fix EOL of text files in a dump
  * export               export files from a dumpfile
@@ -76,6 +77,25 @@ Copies a dump file. Doesn't sound like that makes sense but it's a useful
 test of svndump classes (and sometimes it's able to fix broken dump files).
 
 svndumptool.py copy [options] source destination
+
+options:
+  --version   show program's version number and exit
+  -h, --help  show this help message and exit
+
+Known bugs:
+ * None
+
+
+
+Cvs2svnfix
+----------
+
+Fixes a cvs2svn created dumpfile. Some (all?) versions of cvs2svn do not
+create 100% valid dumpfiles according to subversions specification of the
+dumpfile format. It omits the node kind for copied nodes. This command
+repairs those nodes.
+
+svndumptool.py cvs2svnfix [options] inputfile outputfile
 
 options:
   --version   show program's version number and exit
