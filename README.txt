@@ -4,21 +4,29 @@ SvnDumpTool
 
 SvnDumpTool is a tool for processing Subversion dump files (Subversion is a
 version control system available from http://subversion.tigris.org/). It's
-written in python (tested with python 2.3.4 on linux).
+written in python (tested with python 2.4.4 on linux, though 2.3 should
+work fine too).
 
 It has the following commands:
 
- * check        check a dumpfile
- * copy         copy a dumpfile
- * diff         show differences between two dump files
- * eolfix       fix EOL of text files in a dump
- * export       export files from a dumpfile
- * merge        merge dump files
- * log          show the log of a dumpfile
+ * check                check a dumpfile
+ * copy                 copy a dumpfile
+ * diff                 show differences between two dump files
+ * eolfix               fix EOL of text files in a dump
+ * export               export files from a dumpfile
+ * join                 join dumpfiles
+ * log                  show the log of a dumpfile
+ * ls                   list files of a given revision
+ * merge                merge dump files
+ * sanitize             sanitize dump files
+ * split                split dump files
+ * transform-revprop    transform a revision property
+ * transform-prop       transform a node property
+
 
 It's homepage is:
 
-  http://queen.borg.ch/subversion/svndumptool/
+  http://svn.borg.ch/svndumptool/
 
 
 
@@ -37,8 +45,7 @@ Usage
 svndumptool.py command [options] [dumpfiles...]
 
 Only Version 2 dump files can be processed with this tool!
-(Version 2 dumps are those created with svn 1.0 or with svn 1.1 without
- the --deltas option)
+(Version 2 dumps are those created without the --deltas option)
 
 
 
@@ -58,7 +65,7 @@ options:
   -A, --all-checks     do all checks
 
 Known bugs:
- * None
+ * cvs2svn created dumps may cause false negatives.
 
 
 
@@ -66,7 +73,7 @@ Copy
 ----
 
 Copies a dump file. Doesn't sound like that makes sense but it's a useful
-test of svndump classes.
+test of svndump classes (and sometimes it's able to fix broken dump files).
 
 svndumptool.py copy [options] source destination
 
@@ -106,7 +113,7 @@ Options:
                         ignore a differing/missing property
 
 Known bugs:
- * None
+ * cvs2svn created dumps may cause false negatives.
 
 
 
@@ -171,6 +178,61 @@ Known bugs:
 
 
 
+Join
+----
+
+Concatenates two or more dumpfiles.
+
+svndumptool.py join -o outputfile dumpfiles...
+
+options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -o OUTFILE, --output-file=OUTFILE
+                        set the name of the output dumpfile.
+
+Known bugs:
+ * None
+
+
+
+Log
+---
+
+Shows the log of a dumpfile in (almost) the same format as "svn log".
+
+svndumptool.py log [options] dumpfiles...
+
+options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -r REVISION, --revision=REVISION
+                        revision number or range (X:Y)
+  -v, --verbose         verbose output
+
+Known bugs:
+ * None
+
+
+
+Ls
+--
+
+Lists all files and dirs in the given revision or HEAD.
+
+svndumptool.py ls [options] dumpfiles...
+
+options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -r REVNR, --revision=REVNR
+                        revision number
+
+Known bugs:
+ * None
+
+
+
 Merge
 -----
 
@@ -201,20 +263,84 @@ Known bugs:
  * There's no warning when a dumpfile does not have monotonic increasing
    revision dates. Use 'svndumptool.py check -d dumpfile' to check the
    revision dates of a dumpfile.
+ * mkdir-exclude may fail in some cases in cvs2svn created dumps.
 
 
 
-Log
----
+Sanitize
+--------
 
-Shows the log of a dumpfile in (almost) the same format as svn log.
+Replaces data and/or metadata of a dumpfile with md5 hashes.
 
-svndumptool.py log [options] dumpfiles...
+svndumptool.py sanitize [options] source destination
 
 options:
-  --version      show program's version number and exit
-  -h, --help     show this help message and exit
-  -v, --verbose  verbose output
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -f, --no-file-data    Do not sanitize file data.  (Equivalent to --file-
+                        data=none.)
+  -m FILE_DATA_METHOD, --file-data=FILE_DATA_METHOD
+                        Method to sanitize file data: whole, line, none.
+                        Default is whole.
+  -n, --no-filenames    Do not sanitize filenames
+  -e FILENAME_EXCLUDES, --exclude-filename=FILENAME_EXCLUDES
+                        Do not sanitize this filename.  May be used multiple
+                        times.
+  -u, --no-usernames    Do not sanitize usernames
+  -l, --no-logs         Do not sanitize log messages
+  -s SALT, --salt=SALT  Specify the salt to use in hex
+
+Known bugs:
+ * None
+
+
+
+Split
+-----
+
+Splits a dumpfile into multiple smaller dumpfiles.
+
+svndumptool.py split inputfile [startrev endrev filename]...
+
+options:
+  --version   show program's version number and exit
+  -h, --help  show this help message and exit
+
+Known bugs:
+ * None
+
+
+
+Transform-revprop
+-----------------
+
+Transforms a revision property using a regular expression and a
+replacement string.
+
+svndumptool.py transform-revprop propname regex replace source destination
+
+options:
+  --version   show program's version number and exit
+  -h, --help  show this help message and exit
+
+Known bugs:
+ * None
+
+
+
+Transform-prop
+--------------
+
+Transforms a property using a regular expression and a replacement string.
+
+svndumptool.py transform-prop propname regex replace source destination
+
+options:
+  --version   show program's version number and exit
+  -h, --help  show this help message and exit
+
+Known bugs:
+ * None
 
 
 
@@ -227,13 +353,13 @@ While testing with real data i found some weird stuff in these files.
 The safest way to convert EOL's is:
 
 1. Do a test conversion (without --dry-run) converting CRLF only and
-   gereate a warnings file.
+   generate a warnings file.
 
    svndumptool.py  eolfix -Enative -fCRLF -wwarnings.log \
      -mregexp -r '*.txt' input.svndmp output.svndmp
 
 2. Check all files mentioned in warnings.log and decide how to convert
-   each of them. Also choose a set default fix options to minimize the
+   each of them. Also choose a set of default fix options to minimize the
    list of special fix options.
    Maybe it's possible to choose a better set of regular expressions.
 
@@ -264,5 +390,5 @@ The python classes are documented using epydoc
 To generate the HTML docs just enter the followin commands:
 
    mkdir doc
-   epydoc --html -o doc -n "SvnDump 0.3.0" svndump
+   epydoc --html -o doc -n "SvnDump 0.4.0" svndump
 
