@@ -18,6 +18,8 @@ Cleanup and possible bugs:
    is still used (can multiple nodes have the same temp file?).
  * Cleanup sanitize: better handling of temp files.
  * Transform-[rev]prop: Use re.sub() function.
+ * check: Use node.get_kind() in history code, a few places use
+   nodehist[0][0] to get the kind but should be only nodehist[0].
 
 
 Features:
