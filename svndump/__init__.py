@@ -21,7 +21,8 @@
 #===============================================================================
 
 #import 
-__all__ = [ "common", "node", "file", "diff", "merge", "eolfix", "tools" ]
+__all__ = [ "common", "cvs2svnfix", "diff", "eolfix", "file", "merge",
+            "node", "props", "sanitize", "tools" ]
 
 import re
 import common
