@@ -239,6 +239,21 @@ class SvnDumpNode:
         self.__copy_from_path = path
         self.__copy_from_rev = revnr
 
+    def set_kind( self, kind ):
+        """
+        Set the kind of this node.
+
+        The kind can only be set if it was empty.
+
+        @type kind: string
+        @param kind: New kind, either 'file' or 'dir'.
+        """
+        if self.__kind != "":
+            raise SvnDumpException, "Cannot change node kind"
+        if kind != "file" and kind != "dir":
+            raise SvnDumpException, "Unknown kind '%s'" % kind
+        self.__kind = kind
+
     def set_property( self, name, value ):
         """
         Sets a property of this node.
