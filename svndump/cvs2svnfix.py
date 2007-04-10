@@ -57,11 +57,14 @@ class SvnDumpCvs2SvnFix:
 
         indump = SvnDumpFile()
         indump.open( inputfile )
+        has_rev = indump.read_next_rev()
+        outdump = SvnDumpFile()
+        outdump.create_like( outputfile, indump )
         rc = 0
-        prev_date = ( 0, 0 )
         self.__history = {}
 
-        while indump.read_next_rev() and rc == 0:
+        while has_rev and rc == 0:
+            outdump.add_rev( indump.get_rev_props() )
             for node in indump.get_nodes_iter():
                 msglist = self.__fix_node( indump.get_rev_nr(), node )
                 if msglist != None:
@@ -71,6 +74,8 @@ class SvnDumpCvs2SvnFix:
                     for msg in msglist:
                         print "  " + msg
                     break
+                outdump.add_node( node )
+            has_rev = indump.read_next_rev()
 
         indump.close()
         return rc
@@ -108,6 +113,13 @@ class SvnDumpCvs2SvnFix:
                     frompath = "  r%d %s" % ( node.get_copy_from_rev(),
                             node.get_copy_from_path() )
                     return [ "Copy-from path doesn't exist.", frompath ]
+            if node.get_kind() == "":
+                # missing node kind, fix it!
+                if kind == None:
+                    return [ "Unable to fix node." ]
+                node.set_kind( kind )
+                print "Set kind '%s' in r%d for %s" % \
+                        ( kind, revnr, node.get_path() )
             self.__add_node( revnr, node )
         elif action == "delete":
             # path must exist
@@ -124,13 +136,13 @@ class SvnDumpCvs2SvnFix:
             if action == "replace" and node.has_copy_from():
                 self.__delete_node( revnr, node )
                 self.__add_node( revnr, node )
-        if node.get_kind() == "":
-            # missing node kind, fix it!
-            if kind == None:
-                return [ "Unable to fix node." ]
-            node.set_kind( kind )
-            print "Set kind '%s' in r%d for %s" % \
-                    ( kind, revnr, node.get_path() )
+            if node.get_kind() == "":
+                # missing node kind, fix it!
+                if kind == None:
+                    return [ "Unable to fix node." ]
+                node.set_kind( kind )
+                print "Set kind '%s' in r%d for %s" % \
+                        ( kind, revnr, node.get_path() )
         return None
 
     def __node_kind( self, revnr, path ):
