@@ -428,5 +428,5 @@ The python classes are documented using epydoc
 To generate the HTML docs just enter the followin commands:
 
    mkdir doc
-   epydoc --html -o doc -n "SvnDump 0.4.0" svndump
+   epydoc --html -o doc -n "SvnDump 0.5.0" svndump
 

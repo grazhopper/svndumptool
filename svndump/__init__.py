@@ -29,7 +29,7 @@ import common
 from file import SvnDumpFile
 
 __doc__ = """A package for processing subversion dump files."""
-__version = "0.4.0"
+__version = "0.5.0"
 
 def copy_dump_file( srcfile, dstfile, transformer=None ):
     """
