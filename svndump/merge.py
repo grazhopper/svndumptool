@@ -330,7 +330,9 @@ class SvnDumpMerge:
         sPath = path + "/"
         for sPfx, dPfx in renames:
             sLen = len( sPfx )
-            if sPath[:sLen] == sPfx:
+            if sPfx == "/":
+                return dPfx + path
+            elif sPath[:sLen] == sPfx:
                 if len(path) <= len(sPfx):
                     # it's the full path
                     return dPfx[0:len(dPfx)-1]
