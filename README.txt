@@ -368,6 +368,24 @@ Known bugs:
 Some tips
 =========
 
+Moving things around
+--------------------
+
+The merge command has a rename option so merge can be 'abused' to just
+rename parts of a repository.
+
+The following example shows how to add trunk tags and branches and move
+everything in from the rpository root into trunk:
+
+svndumptool.py merge -i source.svndmp -r "" trunk \
+	-d trunk -d tags -d branches -m "Create trunk tags and branches." \
+	-o destination.svndmp
+
+
+
+Fixing end-of-line
+------------------
+
 While testing with real data i found some weird stuff in these files.
 
 The safest way to convert EOL's is:
