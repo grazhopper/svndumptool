@@ -9,7 +9,7 @@ setup(
     version = '0.5.0',
     description='Package and cmdline tool for processing Subversion dump files.',
     license='GNU General Public License (GPL)',
-    url='http://queen.borg.ch/subversion/svndumptool/',
+    url='http://svn.borg.ch/svndumptool/',
     download_url='http://svn.borg.ch/svndumptool/0.5.0/svndumptool-0.5.0.tar.gz',
     author='Martin Furter',
     author_email = 'mf@rola.ch',
