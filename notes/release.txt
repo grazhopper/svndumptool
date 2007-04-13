@@ -1,0 +1,27 @@
+
+Release process:
+===============
+
+Check all URLs. Current list of files:
+ - README.txt
+ - setup.py
+ - svndumptool.spec
+
+Check all version numbers. Current list of files:
+ - README.txt
+ - setup.py
+ - svndumptool.spec
+
+Update CHANGELOG.txt
+
+Update README.txt
+
+Create release branch.
+
+Edit svndumptool.spec:
+ - set release: '%define release 1'
+
+Move release branch to tags.
+
+Increase all version numbers.
+
