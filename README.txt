@@ -425,8 +425,36 @@ Python classes
 
 The python classes are documented using epydoc
 (http://epydoc.sourceforge.net/).
-To generate the HTML docs just enter the followin commands:
+To generate the HTML docs just enter the following commands:
 
    mkdir doc
    epydoc --html -o doc -n "SvnDump 0.5.0" svndump
+
+Packaging
+=========
+
+Creating a source tar.gz
+------------------------
+
+./setup.py sdist --formats gztar
+
+This will create:
+./dist/svndumptool-0.5.0.tar.gz
+
+Creating an rpm
+---------------
+
+mkdir workarea
+cd workarea
+mkdir SPECS RPMS SRPMS BUILD SOURCES buildroot
+cp ../svndumptool.spec SPECS/
+cp ../dist/svndumptool-0.5.0.tar.gz SOURCES/
+rpmbuild --define="_topdir `pwd`" \
+  --define="buildroot `pwd`/buildroot" \
+  -ba SPECS/svndumptool.spec
+
+This will generate 2 files, a binary rpm and a source rpm:
+$ find -name \*.rpm
+./SRPMS/svndumptool-0.5.0-1.src.rpm
+./RPMS/noarch/svndumptool-0.5.0-1.noarch.rpm
 
