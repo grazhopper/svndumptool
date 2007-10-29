@@ -13,6 +13,7 @@ It has the following commands:
  * copy                 copy a dumpfile
  * cvs2svnfix           fix a cvs2svn created dumpfile
  * diff                 show differences between two dump files
+ * edit                 edit files in a dumpfile
  * eolfix               fix EOL of text files in a dump
  * export               export files from a dumpfile
  * join                 join dumpfiles
@@ -134,6 +135,32 @@ Options:
 
 Known bugs:
  * cvs2svn created dumps may cause false negatives.
+
+
+
+Edit
+----
+
+Edits the content of files in a dump by replacing them with the contents of
+another file.  Also allows properties to be deleted from files.
+
+svndumptool.py edit [options] sourcedump [destinationdump]
+
+options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -r REVNR, --revision=REVNR
+                        revision number to edit.
+  -f FILENAME, --file=FILENAME
+                        filename of repos path to edit.
+  --replace=REPLACE     path of a replacement file.
+  --propdel=PROPDEL     prop name to delete.
+  -q, --quiet           quiet output.
+  -v, --verbose         verbose output.
+  --dry-run             just show what would be done but don't do it.
+
+Known bugs:
+ * None
 
 
 

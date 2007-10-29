@@ -26,6 +26,7 @@ import sys
 from svndump import __version
 from svndump.cvs2svnfix import svndump_cvs2svnfix_cmdline
 from svndump.diff import svndump_diff_cmdline
+from svndump.edit import svndump_edit_cmdline
 from svndump.eolfix import svndump_eol_fix_cmdline
 from svndump.merge import svndump_merge_cmdline
 from svndump.props import svndump_transform_revprop_cmdline, \
@@ -41,6 +42,7 @@ __commands = {
     "copy":                 svndump_copy_cmdline,
     "cvs2svnfix":           svndump_cvs2svnfix_cmdline,
     "diff":                 svndump_diff_cmdline,
+    "edit":                 svndump_edit_cmdline,
     "eolfix":               svndump_eol_fix_cmdline,
     "export":               svndump_export_cmdline,
     "join":                 svndump_join_cmdline,
@@ -66,6 +68,7 @@ def __help( appname, args ):
         print "    copy                 copy a dumpfile"
         print "    cvs2svnfix           fix a cvs2svn created dumpfile"
         print "    diff                 show differences between two dump files"
+        print "    edit                 edit files in a dumpfile"
         print "    eolfix               fix EOL of text files in a dump"
         print "    export               export files from a dumpfile"
         print "    join                 join dumpfiles"

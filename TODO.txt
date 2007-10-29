@@ -30,12 +30,12 @@ Features:
  * Check that svn:date and __rev_date are always the same.
  * Move tests from svndumptest.py into a package and add more tests...
  * Output an error if a file exists that should be opened for writing.
+ * Edit: Add some more modifications. e.g. regex filename support, propset...
 
 
 Ideas:
 
  * New command 'filter', same as svndumpfilter.
- * New command 'edit' which can do many modifications.
  * Make an abstract base class for SvnDumpFile (maybe SvnDumpReader)
    and make SvnDumpMerge, SvnDumpEolFix, SvnDumpFilter and SvnDumpEdit
    subclasses of it. Those commands can then be chained, something like:
