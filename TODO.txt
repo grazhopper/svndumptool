@@ -11,6 +11,8 @@ Bugs:
     - merge: mkdir exclude may fail
     - check: may output false negatives
     - diff: may output wrong diffs of node kind
+ * eolfix: Remove the mode parameter and automatically set mode to
+   regex when a regex is specified.
 
 
 Cleanup and possible bugs:

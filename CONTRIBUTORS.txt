@@ -22,3 +22,7 @@ Christian Iversen
 Nathan Kidd
  - Make Text-content-md5 optional (for vss2svn).
 
+Chuck Esterbrook
+ - Feedback about eolfix not working when a regex is specified but
+   mode not set to regex.
+
