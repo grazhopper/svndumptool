@@ -475,7 +475,7 @@ class SvnDumpFile:
             else:
                 offset = 0
             # add node
-            path = tags["Node-path:"]
+            path = tags["Node-path:"].lstrip('/')
             action = tags["Node-action:"]
             kind = ""
             if tags.has_key( "Node-kind:" ):
@@ -484,7 +484,7 @@ class SvnDumpFile:
             if properties != None:
                 node.set_properties( properties )
             if tags.has_key( "Node-copyfrom-path:" ):
-                node.set_copy_from( tags["Node-copyfrom-path:"],
+                node.set_copy_from( tags["Node-copyfrom-path:"].lstrip('/'),
                                     int(tags["Node-copyfrom-rev:"]) )
             if tags.has_key( "Text-content-length:" ):
                 node.set_text_fileobj( self.__file, offset,
