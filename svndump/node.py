@@ -184,6 +184,15 @@ class SvnDumpNode:
         """
         return self.__text_len
 
+    def has_md5( self ):
+        """
+        Returns true when this node has a MD5 sum.
+
+        @rtype: bool
+        @return: True when this node has a MD5 sum.
+        """
+        return len( self.__text_md5 ) > 0
+
     def get_text_md5( self ):
         """
         Returns the MD5 hash of the text.

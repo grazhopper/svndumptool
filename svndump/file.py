@@ -486,10 +486,14 @@ class SvnDumpFile:
             if tags.has_key( "Node-copyfrom-path:" ):
                 node.set_copy_from( tags["Node-copyfrom-path:"].lstrip('/'),
                                     int(tags["Node-copyfrom-rev:"]) )
+            if tags.has_key( "Text-content-md5:" ):
+              md5 = tags["Text-content-md5:"]
+            else:
+              md5 = ""
             if tags.has_key( "Text-content-length:" ):
                 node.set_text_fileobj( self.__file, offset,
                                        int(tags["Text-content-length:"]),
-                                       tags["Text-content-md5:"] )
+                                       md5 )
             upath = ( action[0].upper(), path )
             self.__nodes[upath] = node
             # next one...
@@ -806,6 +810,7 @@ class SvnDumpFile:
                 self.__file.write( "Prop-content-length: %d\n" % proplen )
             if node.has_text():
                 self.__file.write( "Text-content-length: %d\n" % textlen )
+            if node.has_md5():
                 self.__file.write( "Text-content-md5: %s\n" % node.get_text_md5() )
             if proplen > 0 or node.has_text():
                 self.__file.write( "Content-length: %d\n" % totlen )

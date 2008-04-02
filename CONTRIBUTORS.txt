@@ -19,3 +19,6 @@ Bernd Rinn
 Christian Iversen
  - Idea for command 'ls'.
 
+Nathan Kidd
+ - Make Text-content-md5 optional (for vss2svn).
+
