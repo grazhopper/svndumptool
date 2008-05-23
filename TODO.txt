@@ -13,8 +13,6 @@ Bugs:
     - diff: may output wrong diffs of node kind
  * eolfix: Remove the mode parameter and automatically set mode to
    regex when a regex is specified.
- * merge: For r0 the date of the first file is used now. I guess it
-   should use the date of teh oldest r0 of all dumps.
  * check: It's not an error if the date of r0 is after the date of r1
    so it should not complain (maybe just warn).
 

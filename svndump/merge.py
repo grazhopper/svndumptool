@@ -43,6 +43,8 @@ class SvnDumpMerge:
 
         # output file name
         self.__out_file = ""
+        # date for revision 0
+        self.__out_r0_date = "9999-99-99T99:99:99.999999Z"
         # list additional directories
         self.__out_dirs = []
         # log message for directory creating revision
@@ -167,6 +169,8 @@ class SvnDumpMerge:
             inDump.open( inFile )
             inDump.read_next_rev();
             self.__in_dumps = self.__in_dumps + [ inDump ]
+            if inDump.get_rev_date_str() < self.__out_r0_date:
+                self.__out_r0_date = inDump.get_rev_date_str()
 
         # remove empty dumps
         dumpCount = self.__remove_empty_dumps()
@@ -177,7 +181,7 @@ class SvnDumpMerge:
         self.outDump = SvnDumpFile()
         if self.outStartRev == 0:
             self.outDump.create_with_rev_0( self.__out_file,
-                self.__in_dumps[0].get_uuid(), self.__in_dumps[0].get_rev_date_str() )
+                self.__in_dumps[0].get_uuid(), self.__out_r0_date )
         else:
             self.outDump.create_with_rev_n( self.__out_file,
                 self.__in_dumps[0].get_uuid(), self.outStartRev )
