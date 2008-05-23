@@ -457,6 +457,8 @@ To generate the HTML docs just enter the following commands:
    mkdir doc
    epydoc --html -o doc -n "SvnDump 0.5.0" svndump
 
+
+
 Packaging
 =========
 
@@ -484,4 +486,11 @@ This will generate 2 files, a binary rpm and a source rpm:
 $ find -name \*.rpm
 ./SRPMS/svndumptool-0.5.0-1.src.rpm
 ./RPMS/noarch/svndumptool-0.5.0-1.noarch.rpm
+
+Creating a .exe
+---------------
+
+Needs py2exe from http://www.py2exe.org/
+
+.\setup.py py2exe
 

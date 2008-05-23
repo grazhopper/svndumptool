@@ -1,12 +1,21 @@
 #!/usr/bin/env python
+#
+# Installing:
+#   ./setup.py install
+#
+# See also README.txt under 'Packaging'
+#
 
-import sys
- 
 from distutils.core import setup
+import svndump
+try:
+    import py2exe
+except:
+    pass
  
 setup(
     name='svndumptool',
-    version = '0.5.0',
+    version = svndump.__version,
     description='Package and cmdline tool for processing Subversion dump files.',
     license='GNU General Public License (GPL)',
     url='http://svn.borg.ch/svndumptool/',
@@ -15,6 +24,7 @@ setup(
     author_email = 'mf@rola.ch',
     packages = [ 'svndump' ],
     scripts = [ 'svndumptool.py' ],
+    console = [ 'svndumptool.py' ],
     classifiers = [
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
