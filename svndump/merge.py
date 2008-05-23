@@ -189,6 +189,7 @@ class SvnDumpMerge:
         # skip revision 0 of all dumps
         for inDump in self.__in_dumps:
             if inDump.get_rev_nr() == 0:
+                # +++ what about r0 revprops?
                 inDump.read_next_rev()
 
         # remove empty dumps

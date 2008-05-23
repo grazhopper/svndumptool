@@ -15,6 +15,7 @@ Bugs:
    regex when a regex is specified.
  * check: It's not an error if the date of r0 is after the date of r1
    so it should not complain (maybe just warn).
+ * merge: Handling of revprops of revision 0? May apply to other cmds too.
 
 
 Cleanup and possible bugs:
