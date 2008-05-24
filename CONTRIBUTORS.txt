@@ -26,6 +26,6 @@ Chuck Esterbrook
  - Feedback about eolfix not working when a regex is specified but
    mode not set to regex.
 
-Anthony
+Anthony Gianakas
  - Extension to setup.py for creating a windows executable.
 
