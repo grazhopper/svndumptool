@@ -105,12 +105,8 @@ class PropertyTransformer:
         for node in dump.get_nodes_iter():
             value = node.get_property(self.__property_name)
             if value != None:
-                replace = []
-                for matcher in self.__pattern.finditer(value):
-                    if matcher:
-                        replace.append(matcher.expand( self.__replace_template ))
-                replace_str = "\n".join(replace)
-                node.set_property( self.__property_name, replace_str )
+                newvalue = self.__pattern.sub(self.__replace_template, value)
+                node.set_property( self.__property_name, newvalue )
 
 def svndump_transform_prop_cmdline( appname, args ):
     """

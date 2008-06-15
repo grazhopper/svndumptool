@@ -163,6 +163,13 @@ class SvnDumpMerge:
         Executes the merge.
         """
 
+        if len(self.__in_files) == 0:
+            print "merge: no input files specified"
+            return
+        if len(self.__out_file) == 0:
+            print "merge: no output file specified"
+            return
+
         # open input dump files
         for inFile in self.__in_files:
             inDump = SvnDumpFile()
