@@ -2,9 +2,13 @@
 Changelog of svndumptool
 ========================
 
-0.5.0: Not released yet.
+0.5.0: Bugfix release (2008-06-16).
 
  - Don't require "Text-content-md5" header. (Useful for vss2svn dump files.)
+ - Fix a bug in check: Property changes on the root dir reported errors.
+ - Added support for py2exe to setup.py.
+ - Using the oldest date for r0 now when merging multiple dump files.
+ - Remove mode option from eolfix and automatically switch to regex mode.
 
 0.4.0: Feature release (2007-04-11)
 
