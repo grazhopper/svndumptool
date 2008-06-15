@@ -235,7 +235,8 @@ class SvnDumpCheck:
         dump.open( dumpfilename )
         rc = 0
         prev_date = ( 0, 0 )
-        self.__history = {}
+        # the root always exists and is a directory
+        self.__history = { "": [ "D", [ 0, 999999999 ] ] }
 
         while dump.read_next_rev():
             self.__next_rev()
