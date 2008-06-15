@@ -476,11 +476,6 @@ def svndump_eol_fix_cmdline( appname, args ):
                        type="string",
                        help="a colon separated list of fix option, revision "
                             "number and path of a file." )
-    parser.add_option( "-m", "--mode",
-                       action="store", dest="mode", default="prop",
-                       type="choice", choices=[ "prop", "regexp" ],
-                       help="text file detection mode: one of "
-                            "'prop' [default], 'regexp'" )
     parser.add_option( "-r", "--regexp",
                        action="append", dest="regexp",
                        help="regexp for matching text file names" )
@@ -505,10 +500,10 @@ def svndump_eol_fix_cmdline( appname, args ):
     eolfix.set_input_file( args[0] )
     if len( args ) == 2:
         eolfix.set_output_file( args[1] )
-    if options.mode == "prop":
-        eolfix.set_mode_prop()
-    elif options.mode == "regexp":
+    if options.regexp != None and len( options.regexp ) > 0:
         eolfix.set_mode_regexp( options.regexp )
+    else:
+        eolfix.set_mode_prop()
     if options.eolstyle != None:
         eolfix.set_eol_style( options.eolstyle )
     eolfix.set_fix_options( options.fix )
