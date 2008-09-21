@@ -187,8 +187,6 @@ options:
   -FFIXREVPATH, --fix-rev-path=FIXREVPATH
                         a colon separated list of fix option, revision number
                         and path of a file.
-  -mMODE, --mode=MODE   text file detection mode: one of 'prop' [default],
-                        'regexp'
   -rREGEXP, --regexp=REGEXP
                         regexp for matching text file names
   -tTMPDIR, --temp-dir=TMPDIR
@@ -421,7 +419,7 @@ The safest way to convert EOL's is:
    generate a warnings file.
 
    svndumptool.py  eolfix -Enative -fCRLF -wwarnings.log \
-     -mregexp -r '*.txt' input.svndmp output.svndmp
+     -r '*.txt' input.svndmp output.svndmp
 
 2. Check all files mentioned in warnings.log and decide how to convert
    each of them. Also choose a set of default fix options to minimize the

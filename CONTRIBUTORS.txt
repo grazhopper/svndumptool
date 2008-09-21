@@ -32,3 +32,6 @@ Anthony Gianakas
 Jim Lawton
  - Bugfix: Diff command reported the wrong dump file for missing nodes.
 
+Ryan Schmidt
+ - Remove mode option from eolfix in README.txt.
+
