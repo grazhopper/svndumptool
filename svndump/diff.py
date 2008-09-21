@@ -596,7 +596,7 @@ class SvnDumpDiff:
                 callback.node_missing( 1, node2 )
             elif indices[1] == -1:
                 node1 = dump1.get_node( indices[0] )
-                callback.node_missing( 1, node1 )
+                callback.node_missing( 2, node1 )
             else:
                 node1 = dump1.get_node( indices[0] )
                 node2 = dump2.get_node( indices[1] )

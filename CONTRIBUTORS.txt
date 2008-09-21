@@ -29,3 +29,6 @@ Chuck Esterbrook
 Anthony Gianakas
  - Extension to setup.py for creating a windows executable.
 
+Jim Lawton
+ - Bugfix: Diff command reported the wrong dump file for missing nodes.
+
