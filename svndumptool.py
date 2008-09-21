@@ -30,7 +30,8 @@ from svndump.edit import svndump_edit_cmdline
 from svndump.eolfix import svndump_eol_fix_cmdline
 from svndump.merge import svndump_merge_cmdline
 from svndump.props import svndump_transform_revprop_cmdline, \
-                          svndump_transform_prop_cmdline
+                          svndump_transform_prop_cmdline, \
+                          svndump_apply_autoprops_cmdline
 from svndump.sanitize import svndump_sanitize_cmdline
 from svndump.tools import svndump_copy_cmdline, svndump_export_cmdline, \
                           svndump_check_cmdline, svndump_log_cmdline, \
@@ -38,6 +39,7 @@ from svndump.tools import svndump_copy_cmdline, svndump_export_cmdline, \
                           svndump_join_cmdline, svndump_split_cmdline
 
 __commands = {
+    "apply-autoprops":      svndump_apply_autoprops_cmdline,
     "check":                svndump_check_cmdline,
     "copy":                 svndump_copy_cmdline,
     "cvs2svnfix":           svndump_cvs2svnfix_cmdline,
@@ -64,6 +66,7 @@ def __help( appname, args ):
         print "svndumptool.py command [options]"
         print ""
         print "  commands:"
+        print "    apply-autoprops      apply auto-props to added files"
         print "    check                check a dump file"
         print "    copy                 copy a dump file"
         print "    cvs2svnfix           fix a cvs2svn created dump file"

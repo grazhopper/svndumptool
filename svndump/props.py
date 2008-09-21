@@ -22,9 +22,10 @@
 #===============================================================================
 
 from optparse import OptionParser
+import os
 import re
 
-from svndump import __version, copy_dump_file
+from svndump import __version, copy_dump_file, SvnDumpFile
 
 class RevisionPropertyTransformer:
     """
@@ -135,4 +136,124 @@ def svndump_transform_prop_cmdline( appname, args ):
     copy_dump_file( args[3], args[4],  PropertyTransformer( args[0], args[1], args[2] ) )
     return 0
 
+
+class SvnConfigParser:
+
+    def __init__( self, filename ):
+        self._sections = {}
+        ifd = open( filename, "r" )
+        section = ""
+        for line in ifd:
+            line = line.strip()
+            if len(line) == 0 or line[0] in ( ';', '#' ):
+                # empty line or comment line
+                pass
+            elif line[0] == '[' and line[-1] == ']':
+                # section
+                section = line[1:-1].strip()
+            else:
+                parts = line.split( "=", 1 )
+                key = parts[0].strip()
+                if len( parts ) == 2 and len(key) > 0 and len(section) > 0:
+                    if not self._sections.has_key( section ):
+                        self._sections[section] = {}
+                    self._sections[section][key] = parts[1].strip()
+
+    def get( self, section, key ):
+        if not self._sections.has_key( section ):
+            return ""
+        sdict = self._sections[section]
+        if not sdict.has_key( key ):
+            return ""
+        return sdict[key]
+
+    def items( self, section ):
+        if not self._sections.has_key( section ):
+            return []
+        return self._sections[section].items()
+
+
+class ApplyAutoprops:
+
+    def __init__( self, inputfilename, outputfilename, configfile ):
+        self.configfile = configfile
+        self.inputfilename = inputfilename
+        self.outputfilename = outputfilename
+        self.autoprops = []
+
+    def apply( self ):
+        self._read_config()
+        inDump = SvnDumpFile()
+        outDump = SvnDumpFile()
+        inDump.open( self.inputfilename )
+        inDump.read_next_rev()
+        outDump.create_like( self.outputfilename, inDump )
+        while inDump.has_revision():
+            outDump.add_rev( inDump.get_rev_props() )
+            for index in range( 0, inDump.get_node_count() ):
+                node = inDump.get_node( index )
+                if node.get_action() == "add":
+                    self._set_properties( node )
+                outDump.add_node( node )
+            inDump.read_next_rev()
+        inDump.close()
+        outDump.close()
+
+    def _set_properties( self, node ):
+        name = node.get_path().split( "/" )[-1]
+        for regex, properties in self.autoprops:
+            if regex.match( name ):
+                for pname, pval in properties:
+                    node.set_property( pname, pval )
+
+    def _read_config( self ):
+        cfg = SvnConfigParser( self.configfile )
+        for key, value in cfg.items( "auto-props" ):
+            regex = self._make_regex( key )
+            properties = self._split_properties( value )
+            self.autoprops.append( ( regex, properties ) )
+
+    def _make_regex( self, expr ):
+        expr = expr.replace( ".", "\\." )
+        expr = expr.replace( "?", "." )
+        expr = expr.replace( "*", ".*" )
+        return re.compile( expr )
+
+    def _split_properties( self, propstring ):
+        properties = []
+        for property in propstring.split( ";" ):
+            namevalue = property.split( "=", 1 )
+            if len(namevalue) == 1:
+                namevalue.append( "" )
+            name = namevalue[0].strip()
+            value = namevalue[1].strip()
+            if value == "" and name in ( "svn:executable", "svn:needs-lock" ):
+                value = "*"
+            properties.append( ( name, value ) )
+        return tuple( properties )
+
+def svndump_apply_autoprops_cmdline( appname, args ):
+    """
+    +++++ document me :)
+    """
+
+    usage = "usage: %s [options] inputdump outputdump" % appname
+    parser = OptionParser( usage=usage, version="%prog "+__version )
+    parser.add_option( "--config-file",
+                       action="store", dest="configfile", default=None,
+                       help="Subversion config file [default: $HOME/.subversion/config]." )
+
+    (options, args) = parser.parse_args( args )
+
+    if len(args) != 2:
+        print "Please specify exactly one input and one output dump file."
+        return 1
+
+    configfile = options.configfile
+    if configfile == None:
+        home = os.environ["HOME"]
+        configfile = os.path.join( home, ".subversion", "config" )
+
+    aa = ApplyAutoprops( args[0], args[1], configfile )
+    return aa.apply()
 
