@@ -75,7 +75,7 @@ def svndump_transform_revprop_cmdline( appname, args ):
     (options, args) = parser.parse_args( args )
 
     if len( args ) != 5:
-        print "specify exactly one propname to transform, one regex to match the value against,\none replacement string, one source dumpfile and one destination dumpfile."
+        print "specify exactly one propname to transform, one regex to match the value against,\none replacement string, one source dump file and one destination dump file."
         return 1
 
     copy_dump_file( args[3], args[4],  RevisionPropertyTransformer( args[0], args[1], args[2] ) )
@@ -129,7 +129,7 @@ def svndump_transform_prop_cmdline( appname, args ):
     (options, args) = parser.parse_args( args )
 
     if len( args ) != 5:
-        print "specify exactly one propname to transform, one regex to match the value against,\none replacement string, one source dumpfile and one destination dumpfile."
+        print "specify exactly one propname to transform, one regex to match the value against,\none replacement string, one source dump file and one destination dump file."
         return 1
 
     copy_dump_file( args[3], args[4],  PropertyTransformer( args[0], args[1], args[2] ) )

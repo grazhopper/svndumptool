@@ -183,7 +183,7 @@ def svndump_sanitize_cmdline( appname, args ):
     (options, args) = parser.parse_args( args )
 
     if len( args ) != 2:
-        print "specify exactly one source and one destination dumpfile."
+        print "specify exactly one source and one destination dump file."
         return 1
 
     sanitizer = SanitizeDumpFile(options)

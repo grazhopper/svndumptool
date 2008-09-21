@@ -361,10 +361,10 @@ class SvnDumpFile:
 
     def create_like( self, filename, srcfile ):
         """
-        Creates this dumpfile like srcfile.
+        Creates this dump file like srcfile.
 
         If the current revision number of srcfile is zero create_with_rev_0()
-        is called on this dumpfile and read_next_rev() is called on srcfile.
+        is called on this dump file and read_next_rev() is called on srcfile.
 
         If the current revision number of srcdump is greater than zero
         create_with_rev_n() is called.
@@ -375,7 +375,7 @@ class SvnDumpFile:
         @type filename: string
         @param filename: Name of the new dump file.
         @type srcfile: SvnDumpFile
-        @param srcfile: A dumpfile.
+        @param srcfile: A dump file.
         @rtype: bool
         @return: False if EOF occured on srcfile.
         """

@@ -9,15 +9,15 @@ work fine too).
 
 It has the following commands:
 
- * check                check a dumpfile
- * copy                 copy a dumpfile
- * cvs2svnfix           fix a cvs2svn created dumpfile
+ * check                check a dump file
+ * copy                 copy a dump file
+ * cvs2svnfix           fix a cvs2svn created dump file
  * diff                 show differences between two dump files
- * edit                 edit files in a dumpfile
+ * edit                 edit files in a dump file
  * eolfix               fix EOL of text files in a dump
- * export               export files from a dumpfile
- * join                 join dumpfiles
- * log                  show the log of a dumpfile
+ * export               export files from a dump file
+ * join                 join dump files
+ * log                  show the log of a dump file
  * ls                   list files of a given revision
  * merge                merge dump files
  * sanitize             sanitize dump files
@@ -54,7 +54,7 @@ Only Version 2 dump files can be processed with this tool!
 Check
 -----
 
-Checks a dumpfile.
+Checks a dump file.
 
 svndumptool.py check [options] dumpfiles...
 
@@ -91,9 +91,9 @@ Known bugs:
 Cvs2svnfix
 ----------
 
-Fixes a cvs2svn created dumpfile. Some (all?) versions of cvs2svn do not
-create 100% valid dumpfiles according to Subversion's specification of the
-dumpfile format. It omits the node kind for copied nodes. This command
+Fixes a cvs2svn created dump file. Some (all?) versions of cvs2svn do not
+create 100% valid dump files according to Subversion's specification of the
+dump file format. It omits the node kind for copied nodes. This command
 repairs those nodes.
 
 svndumptool.py cvs2svnfix [options] inputfile outputfile
@@ -206,7 +206,7 @@ Known bugs:
 Export
 ------
 
-Exports files from a dumpfile.
+Exports files from a dump file.
 
 svndumptool.py export [options] dumpfile
 
@@ -226,7 +226,7 @@ Known bugs:
 Join
 ----
 
-Concatenates two or more dumpfiles.
+Concatenates two or more dump files.
 
 svndumptool.py join -o outputfile dumpfiles...
 
@@ -234,7 +234,7 @@ options:
   --version             show program's version number and exit
   -h, --help            show this help message and exit
   -o OUTFILE, --output-file=OUTFILE
-                        set the name of the output dumpfile.
+                        set the name of the output dump file.
 
 Known bugs:
  * None
@@ -244,7 +244,7 @@ Known bugs:
 Log
 ---
 
-Shows the log of a dumpfile in (almost) the same format as "svn log".
+Shows the log of a dump file in (almost) the same format as "svn log".
 
 svndumptool.py log [options] dumpfiles...
 
@@ -281,9 +281,9 @@ Known bugs:
 Merge
 -----
 
-Merges multiple dumpfiles into one. It does this by reading all dumpfiles
+Merges multiple dump files into one. It does this by reading all dump files
 at the same time and always adding the revision with the oldest revision
-date to the output dumpfile.
+date to the output dump file.
 Use 'svndumptool.py check -a -d dumpfile' to check that actions and dates
 in the merged file make sense.
 
@@ -305,9 +305,9 @@ options:
   --example             show a little usage example.
 
 Known bugs:
- * There's no warning when a dumpfile does not have monotonic increasing
+ * There's no warning when a dump file does not have monotonic increasing
    revision dates. Use 'svndumptool.py check -d dumpfile' to check the
-   revision dates of a dumpfile.
+   revision dates of a dump file.
  * mkdir-exclude may fail in some cases in cvs2svn created dumps.
 
 
@@ -315,7 +315,7 @@ Known bugs:
 Sanitize
 --------
 
-Replaces data and/or metadata of a dumpfile with md5 hashes.
+Replaces data and/or metadata of a dump file with md5 hashes.
 
 svndumptool.py sanitize [options] source destination
 
@@ -343,7 +343,7 @@ Known bugs:
 Split
 -----
 
-Splits a dumpfile into multiple smaller dumpfiles.
+Splits a dump file into multiple smaller dump files.
 
 svndumptool.py split inputfile [startrev endrev filename]...
 

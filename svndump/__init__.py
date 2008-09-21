@@ -33,7 +33,7 @@ __version = "0.6.0"
 
 def copy_dump_file( srcfile, dstfile, transformer=None ):
     """
-    Copy a dumpfile.
+    Copy a dump file.
 
     @type srcfile: string
     @param srcfile: Source filename.
@@ -52,7 +52,7 @@ def copy_dump_file( srcfile, dstfile, transformer=None ):
 
     hasrev = srcdmp.read_next_rev()
     if hasrev:
-        # create the dumpfile
+        # create the dump file
         dstdmp.create_like( dstfile, srcdmp )
         # now copy all the revisions
         while hasrev:

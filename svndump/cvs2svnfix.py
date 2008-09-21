@@ -50,9 +50,9 @@ class SvnDumpCvs2SvnFix:
         Fix a cvs2svn created dump file.
 
         @type inputfile: string
-        @param inputfile: Name of the cvs2svn created dumpfile.
+        @param inputfile: Name of the cvs2svn created dump file.
         @type outputfile: string
-        @param outputfile: Name of the fixed dumpfile.
+        @param outputfile: Name of the fixed dump file.
         """
 
         indump = SvnDumpFile()

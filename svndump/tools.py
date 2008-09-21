@@ -54,7 +54,7 @@ def svndump_copy_cmdline( appname, args ):
     (options, args) = parser.parse_args( args )
 
     if len( args ) != 2:
-        print "specify exactly one source and one destination dumpfile."
+        print "specify exactly one source and one destination dump file."
         return 1
 
     copy_dump_file( args[0], args[1] )
@@ -851,12 +851,12 @@ def svndump_log_cmdline( appname, args ):
 
 def join_dumpfiles( inputlist, outfilename ):
     """
-    Joins dumpfiles.
+    Joins dump files.
 
     @type inputlist: list
     @param inputlist: A list containing the input filenames.
     @type outfilename: string
-    @param outfilename: Name of the output dumpfile.
+    @param outfilename: Name of the output dump file.
     @rtype: int
     @return: 0 for success.
     """
@@ -927,14 +927,14 @@ def svndump_join_cmdline( appname, args ):
     parser.add_option( "-o", "--output-file",
                        action="store", type="string",
                        dest="outfile", default=None,
-                       help="set the name of the output dumpfile." )
+                       help="set the name of the output dump file." )
     (options, args) = parser.parse_args( args )
 
     if options.outfile == None:
-        print "please specify the output dumpfile (option -o)."
+        print "please specify the output dump file (option -o)."
         return 1
     if len(args) == 0:
-        print "please specify at least one input dumpfile."
+        print "please specify at least one input dump file."
         return 1
 
     return join_dumpfiles( args, options.outfile )
@@ -944,7 +944,7 @@ def svndump_join_cmdline( appname, args ):
 
 def split_dumpfiles( inputfilename, outlist ):
     """
-    Splits a dumpfile.
+    Splits a dump file.
 
     @type inputfilename: string
     @param inputfilename: Name of the input file.
