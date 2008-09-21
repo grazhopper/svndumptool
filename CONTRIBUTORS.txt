@@ -35,4 +35,5 @@ Jim Lawton
 Ryan Schmidt
  - Remove mode option from eolfix in README.txt.
  - Fix regular expression in eolfix example.
+ - Fix typos and spelling issues in README.txt.
 

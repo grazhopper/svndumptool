@@ -4,7 +4,7 @@ SvnDumpTool
 
 SvnDumpTool is a tool for processing Subversion dump files (Subversion is a
 version control system available from http://subversion.tigris.org/). It's
-written in python (tested with python 2.4.4 on linux, though 2.3 should
+written in Python (tested with Python 2.4.4 on Linux, though 2.3 should
 work fine too).
 
 It has the following commands:
@@ -26,7 +26,7 @@ It has the following commands:
  * transform-prop       transform a node property
 
 
-It's homepage is:
+Its homepage is:
 
   http://svn.borg.ch/svndumptool/
 
@@ -92,7 +92,7 @@ Cvs2svnfix
 ----------
 
 Fixes a cvs2svn created dumpfile. Some (all?) versions of cvs2svn do not
-create 100% valid dumpfiles according to subversions specification of the
+create 100% valid dumpfiles according to Subversion's specification of the
 dumpfile format. It omits the node kind for copied nodes. This command
 repairs those nodes.
 
@@ -110,7 +110,7 @@ Known bugs:
 Diff
 ----
 
-Shows differences between two subversion dump files.
+Shows differences between two Subversion dump files.
 
 svndumptool.py diff [options] dumpfile1 dumpfile2
 
@@ -399,11 +399,11 @@ Moving things around
 The merge command has a rename option so merge can be 'abused' to just
 rename parts of a repository.
 
-The following example shows how to add trunk tags and branches and move
-everything in from the rpository root into trunk:
+The following example shows how to add trunk, tags and branches directories
+and move everything from the repository root into trunk:
 
 svndumptool.py merge -i source.svndmp -r "" trunk \
-	-d trunk -d tags -d branches -m "Create trunk tags and branches." \
+	-d trunk -d tags -d branches -m "Create trunk, tags and branches." \
 	-o destination.svndmp
 
 
@@ -411,7 +411,7 @@ svndumptool.py merge -i source.svndmp -r "" trunk \
 Fixing end-of-line
 ------------------
 
-While testing with real data i found some weird stuff in these files.
+While testing with real data I found some weird stuff in these files.
 
 The safest way to convert EOL's is:
 
@@ -448,7 +448,7 @@ The safest way to convert EOL's is:
 Python classes
 ==============
 
-The python classes are documented using epydoc
+The Python classes are documented using epydoc
 (http://epydoc.sourceforge.net/).
 To generate the HTML docs just enter the following commands:
 
