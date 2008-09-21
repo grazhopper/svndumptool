@@ -9,6 +9,7 @@ work fine too).
 
 It has the following commands:
 
+ * apply-autoprops      apply the auto-props defined in SVN's config
  * check                check a dump file
  * copy                 copy a dump file
  * cvs2svnfix           fix a cvs2svn created dump file
@@ -48,6 +49,22 @@ svndumptool.py command [options] [dumpfiles...]
 
 Only Version 2 dump files can be processed with this tool!
 (Version 2 dumps are those created without the --deltas option)
+
+
+
+Apply-Autoprops
+---------------
+
+Applies the automatic properties defined in subversions config file.
+
+usage: svndumptool.py apply-autoprops [options] inputdump outputdump
+
+options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  --config-file=CONFIGFILE
+                        Subversion config file [default:
+                        $HOME/.subversion/config].
 
 
 

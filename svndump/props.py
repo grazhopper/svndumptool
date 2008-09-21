@@ -138,8 +138,17 @@ def svndump_transform_prop_cmdline( appname, args ):
 
 
 class SvnConfigParser:
+    """
+    A class similar to ConfigParser which actually works with SVN's config.
+    """
 
     def __init__( self, filename ):
+        """
+        Initialize the object and read the config file.
+
+        @type filename: string
+        @param filename: Name of teh config file.
+        """
         self._sections = {}
         ifd = open( filename, "r" )
         section = ""
@@ -160,6 +169,16 @@ class SvnConfigParser:
                     self._sections[section][key] = parts[1].strip()
 
     def get( self, section, key ):
+        """
+        Returns the value for the specified key in the specified section.
+
+        @type section: string
+        @param section: Name of the section.
+        @type key: string
+        @param key: Key in the section.
+        @rtype: string
+        @return: Value for the specified key or empty string if not found.
+        """
         if not self._sections.has_key( section ):
             return ""
         sdict = self._sections[section]
@@ -168,38 +187,73 @@ class SvnConfigParser:
         return sdict[key]
 
     def items( self, section ):
+        """
+        Returns all key/value pairs in the specified section.
+
+        @type section: string
+        @param section: Name of the section.
+        @rtype: ((key,value)...)
+        @return: List of key/value pairs.
+        """
         if not self._sections.has_key( section ):
             return []
         return self._sections[section].items()
 
 
 class ApplyAutoprops:
+    """
+    A class for applying auto-props to a subversion dump file.
+    """
 
     def __init__( self, inputfilename, outputfilename, configfile ):
+        """
+        Initializes the ApplyAutoprops object.
+
+        @type inputfilename: string
+        @param inputfilename: Name of the input dump file.
+        @type outputfilename: string
+        @param outputfilename: Name of the output dump file.
+        @type configfile: string
+        @param configfile: Name of the Subversion config file.
+        """
         self.configfile = configfile
         self.inputfilename = inputfilename
         self.outputfilename = outputfilename
         self.autoprops = []
 
     def apply( self ):
-        self._read_config()
-        inDump = SvnDumpFile()
-        outDump = SvnDumpFile()
-        inDump.open( self.inputfilename )
-        inDump.read_next_rev()
-        outDump.create_like( self.outputfilename, inDump )
-        while inDump.has_revision():
-            outDump.add_rev( inDump.get_rev_props() )
-            for index in range( 0, inDump.get_node_count() ):
-                node = inDump.get_node( index )
-                if node.get_action() == "add":
-                    self._set_properties( node )
-                outDump.add_node( node )
+        """
+        Apllies the auto-props.
+        """
+        try:
+            self._read_config()
+            inDump = SvnDumpFile()
+            outDump = SvnDumpFile()
+            inDump.open( self.inputfilename )
             inDump.read_next_rev()
-        inDump.close()
-        outDump.close()
+            outDump.create_like( self.outputfilename, inDump )
+            while inDump.has_revision():
+                outDump.add_rev( inDump.get_rev_props() )
+                for index in range( 0, inDump.get_node_count() ):
+                    node = inDump.get_node( index )
+                    if node.get_action() == "add":
+                        self._set_properties( node )
+                    outDump.add_node( node )
+                inDump.read_next_rev()
+            inDump.close()
+            outDump.close()
+        except:
+            return 1
+        return 0
 
     def _set_properties( self, node ):
+        """
+        Set the auto-props.
+
+        @type node: SvnDumpNode
+        @param node: Node to set the properties on.
+        """
+
         name = node.get_path().split( "/" )[-1]
         for regex, properties in self.autoprops:
             if regex.match( name ):
@@ -207,6 +261,9 @@ class ApplyAutoprops:
                     node.set_property( pname, pval )
 
     def _read_config( self ):
+        """
+        Reads the auto-props config.
+        """
         cfg = SvnConfigParser( self.configfile )
         for key, value in cfg.items( "auto-props" ):
             regex = self._make_regex( key )
@@ -214,12 +271,28 @@ class ApplyAutoprops:
             self.autoprops.append( ( regex, properties ) )
 
     def _make_regex( self, expr ):
+        """
+        Convert the apr_fnmatch expression into a regular expression.
+
+        @type expr: string
+        @param expr: An apr_fnmatch expression.
+        @rtype: re.Regex
+        @return: Compiled regular expression.
+        """
         expr = expr.replace( ".", "\\." )
         expr = expr.replace( "?", "." )
         expr = expr.replace( "*", ".*" )
-        return re.compile( expr )
+        return re.compile( "^%s$" % expr )
 
     def _split_properties( self, propstring ):
+        """
+        Splits the value of a key in the auto-props section.
+
+        @type propstring: string
+        @param propstring: A property string.
+        @rtype: ((str,str)...)
+        @return: Tuple containing property name and value tuples.
+        """
         properties = []
         for property in propstring.split( ";" ):
             namevalue = property.split( "=", 1 )
@@ -234,7 +307,18 @@ class ApplyAutoprops:
 
 def svndump_apply_autoprops_cmdline( appname, args ):
     """
-    +++++ document me :)
+    Parses the commandline and applies the automatic properties.
+
+    Usage:
+
+        >>> svndump_apply_autoprops_cmdline( sys.argv[0], sys.argv[1:] )
+
+    @type appname: string
+    @param appname: Name of the application (used in help text).
+    @type args: list( string )
+    @param args: Commandline arguments.
+    @rtype: integer
+    @return: Return code (0 = OK).
     """
 
     usage = "usage: %s [options] inputdump outputdump" % appname
