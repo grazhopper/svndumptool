@@ -14,6 +14,7 @@ Bugs:
  * check: It's not an error if the date of r0 is after the date of r1
    so it should not complain (maybe just warn).
  * merge: Handling of revprops of revision 0? May apply to other cmds too.
+ * file.py: Error if UUID is missing in VSS2SVN created dumps.
 
 
 Cleanup and possible bugs:
