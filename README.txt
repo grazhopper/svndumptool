@@ -55,7 +55,9 @@ Only Version 2 dump files can be processed with this tool!
 Apply-Autoprops
 ---------------
 
-Applies the automatic properties defined in subversions config file.
+Applies the automatic properties defined in Subversion's config file.
+The value of "enable-auto-props" is ignored and the properties are
+always applied.
 
 usage: svndumptool.py apply-autoprops [options] inputdump outputdump
 

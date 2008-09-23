@@ -147,7 +147,7 @@ class SvnConfigParser:
         Initialize the object and read the config file.
 
         @type filename: string
-        @param filename: Name of teh config file.
+        @param filename: Name of the config file.
         """
         self._sections = {}
         ifd = open( filename, "r" )
@@ -202,7 +202,7 @@ class SvnConfigParser:
 
 class ApplyAutoprops:
     """
-    A class for applying auto-props to a subversion dump file.
+    A class for applying auto-props to a Subversion dump file.
     """
 
     def __init__( self, inputfilename, outputfilename, configfile ):
@@ -223,7 +223,7 @@ class ApplyAutoprops:
 
     def apply( self ):
         """
-        Apllies the auto-props.
+        Applies the auto-props.
         """
         try:
             self._read_config()
