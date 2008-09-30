@@ -242,7 +242,8 @@ class ApplyAutoprops:
                 inDump.read_next_rev()
             inDump.close()
             outDump.close()
-        except:
+        except Exception, ex:
+            print "Error:", ex
             return 1
         return 0
 
@@ -279,10 +280,26 @@ class ApplyAutoprops:
         @rtype: re.Regex
         @return: Compiled regular expression.
         """
-        expr = expr.replace( ".", "\\." )
-        expr = expr.replace( "?", "." )
-        expr = expr.replace( "*", ".*" )
-        return re.compile( "^%s$" % expr )
+        replacements = {
+                "\\": "\\\\",
+                "(":  "\\(",
+                ")":  "\\)",
+                "{":  "\\{",
+                "}":  "\\}",
+                "|":  "\\|",
+                "^":  "\\^",
+                "$":  "\\$",
+                "+":  "\\+",
+                ".":  "\\.",
+                "?":  ".",
+                "*":  ".*",
+        }
+        rexpr = ""
+        for c in expr:
+            if c in replacements:
+                c = replacements[c]
+            rexpr += c
+        return re.compile( "^%s$" % rexpr )
 
     def _split_properties( self, propstring ):
         """
