@@ -95,6 +95,8 @@ class SvnDumpEolFix:
         self.__fix_rev_path = {}
         # warning file obj
         self.__warning_file = None
+        # count of warnings logged
+        self.__warning_count = 0
         # temp directory
         self.__temp_dir = "./"
 
@@ -232,13 +234,19 @@ class SvnDumpEolFix:
         """
         if self.__warning_file != None:
             self.__warning_file.close()
+        self.__warning_count = 0
         self.__warning_file = open( warnfile, "w" )
-        self.__warning_file.write( "#/bin/sh\n" )
-        self.__warning_file.write( "\n" )
-        self.__warning_file.write( "SVN=svn\n" )
-        self.__warning_file.write( "TMP=tmp\n" )
-        self.__warning_file.write( "REPOS=file:///tmp/repos\n" )
-        self.__warning_file.write( "\n" )
+        self.__warning_file.write(
+                "#/bin/sh\n" +
+                "\n" +
+                "# the following statements fetch the files for which\n" +
+                "# warnings have been issued from the repository\n" +
+                "\n" +
+                "# name of the svn executable\n" +
+                "SVN=svn\n" +
+                "# repository URL\n" +
+                "REPOS=file:///tmp/repos\n" +
+                "\n" )
 
     def set_temp_dir( self, tmpdir ):
         """
@@ -283,6 +291,12 @@ class SvnDumpEolFix:
                 print "\n\n*** r%d ***\n" % srcdmp.get_rev_nr()
                 self.__process_rev( srcdmp, dstdmp )
                 hasrev = srcdmp.read_next_rev()
+        if self.__warning_file != None:
+            self.__warning_file.write(
+                    "\n\n# %d warnings\n" % self.__warning_count )
+            self.__warning_file.close()
+            self.__warning_file = None
+            self.__warning_count = 0
 
     def __process_rev( self, srcdmp, dstdmp ):
         """
@@ -401,6 +415,7 @@ class SvnDumpEolFix:
                         cmd = '$SVN cat -r %d "$REPOS/%s" > "%s"\n' % \
                             ( revnr, node.get_path(), tmpfile )
                         self.__warning_file.write( cmd )
+                        self.__warning_count += 1
                 md.update( data )
                 outfile.write( data )
                 outlen = outlen + len( data )
