@@ -342,7 +342,8 @@ def svndump_apply_autoprops_cmdline( appname, args ):
     parser = OptionParser( usage=usage, version="%prog "+__version )
     parser.add_option( "--config-file",
                        action="store", dest="configfile", default=None,
-                       help="Subversion config file [default: $HOME/.subversion/config]." )
+                       help="Subversion config file " +
+                            "(default: $HOME/.subversion/config)." )
 
     (options, args) = parser.parse_args( args )
 
