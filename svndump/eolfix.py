@@ -309,8 +309,10 @@ class SvnDumpEolFix:
             print "  '%s'" % node.get_path()
             istextfile = self.__is_text_file( srcdmp, node,
                                               self.__is_text_file_params )
-            if istextfile and node.has_text():
+            if istextfile:
                 node = self.__convert_eol( node, srcdmp.get_rev_nr() )
+            else:
+                print "    binary file, ignored"
             # +++ is node.has_properties a good enough test?
             # maybe i have to save the properties of each node and
             # use them here?
@@ -333,9 +335,9 @@ class SvnDumpEolFix:
         @return: The converted node.
         """
 
-        if node.get_text_length == -1:
+        if not node.has_text():
             # no text
-            print "    is_text"
+            print "    text file, no text changes"
             return node
 
         # search for CR
@@ -354,12 +356,12 @@ class SvnDumpEolFix:
             key = ( revnr, node.get_path() )
             if self.__fix_rev_path.has_key( key ):
                 fix = self.__fix_rev_path[key]
-            print "    is_text, convert (fix option %d)" % fix
+            print "    text file, convert (fix option %d)" % fix
             if self.__dry_run or fix == 0:
                 # do not convert with --dry-run or when there's nothing to fix
                 need_conv = False
         else:
-            print "    is_text"
+            print "    text file, no conversion requested"
         if need_conv:
             # do the conversion
             node.text_reopen( handle )
