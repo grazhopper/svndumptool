@@ -499,7 +499,8 @@ def svndump_eol_fix_cmdline( appname, args ):
     parser.add_option( "-t", "--temp-dir",
                        action="store", dest="tmpdir",
                        type="string",
-                       help="directory for temporary files." )
+                       help="directory for temporary files " +
+                            "(default: './')." )
     parser.add_option( "-w", "--warn-file",
                        action="store", dest="warnfile",
                        type="string",

@@ -209,7 +209,7 @@ options:
   -rREGEXP, --regexp=REGEXP
                         regexp for matching text file names
   -tTMPDIR, --temp-dir=TMPDIR
-                        directory for temporary files.
+                        directory for temporary files (default: './').
   -wWARNFILE, --warn-file=WARNFILE
                         file for storing the warnings.
   --dry-run             just show what would be done but don't do it
@@ -217,7 +217,6 @@ options:
 Known bugs:
  * EOL's aren't fixed in a file which was copied and the old file was not a
    text file.
- * Produces temp files in the current directory (named tmpnodeN).
  * Diff shows a few Text changes after eolfix !?!
    
 
