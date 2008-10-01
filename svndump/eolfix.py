@@ -66,8 +66,11 @@ def eolfix_callback_regexp( dumpfile, node, expressions ):
     Returns True if a conversion of the text is needed.
     """
 
-    for re in expressions:
-        if re.search( node.get_path() ) != None:
+    for searchpath, re in expressions:
+        name = node.get_path()
+        if not searchpath:
+            name = name.split( "/" )[-1]
+        if re.search( name ) != None:
             return True
     return False
 
@@ -150,7 +153,9 @@ class SvnDumpEolFix:
         self.__is_text_file = eolfix_callback_regexp
         self.__is_text_file_params = []
         for expr in expressions:
-            self.__is_text_file_params.append( re.compile( expr ) )
+            searchpath = expr.find( "/" ) >= 0
+            regex = re.compile( expr )
+            self.__is_text_file_params.append( ( searchpath, regex ) )
 
     def set_mode_callback( self, callback, parameter ):
         """
@@ -499,7 +504,9 @@ def svndump_eol_fix_cmdline( appname, args ):
                             "number and path of a file." )
     parser.add_option( "-r", "--regexp",
                        action="append", dest="regexp",
-                       help="regexp for matching text file names" )
+                       help="regexp for matching text file names or the " +
+                            "full path if the expression contains a slash. " +
+                            "This option can be specified more than once." )
     parser.add_option( "-t", "--temp-dir",
                        action="store", dest="tmpdir",
                        type="string",
