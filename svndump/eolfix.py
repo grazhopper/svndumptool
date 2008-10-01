@@ -321,6 +321,7 @@ class SvnDumpEolFix:
         while index < nodeCount:
             node = srcdmp.get_node( index )
             print "  '%s'" % node.get_path()
+            istextfile = False
             if node.get_kind() == 'dir':
                 print "    directory, ignored"
             else:
