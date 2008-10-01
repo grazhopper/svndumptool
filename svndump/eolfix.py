@@ -321,12 +321,15 @@ class SvnDumpEolFix:
         while index < nodeCount:
             node = srcdmp.get_node( index )
             print "  '%s'" % node.get_path()
-            istextfile = self.__is_text_file( srcdmp, node,
-                                              self.__is_text_file_params )
-            if istextfile:
-                node = self.__convert_eol( node, srcdmp.get_rev_nr() )
+            if node.get_kind() == 'dir':
+                print "    directory, ignored"
             else:
-                print "    binary file, ignored"
+                istextfile = self.__is_text_file( srcdmp, node,
+                                                  self.__is_text_file_params )
+                if istextfile:
+                    node = self.__convert_eol( node, srcdmp.get_rev_nr() )
+                else:
+                    print "    unselected file, ignored"
             # +++ is node.has_properties a good enough test?
             # maybe i have to save the properties of each node and
             # use them here?
@@ -351,7 +354,7 @@ class SvnDumpEolFix:
 
         if not node.has_text():
             # no text
-            print "    text file, no text changes"
+            print "    selected file, no text changes"
             return node
 
         # search for CR
@@ -370,12 +373,12 @@ class SvnDumpEolFix:
             key = ( revnr, node.get_path() )
             if self.__fix_rev_path.has_key( key ):
                 fix = self.__fix_rev_path[key]
-            print "    text file, convert (fix option %d)" % fix
+            print "    selected file, convert (fix option %d)" % fix
             if self.__dry_run or fix == 0:
                 # do not convert with --dry-run or when there's nothing to fix
                 need_conv = False
         else:
-            print "    text file, no conversion requested"
+            print "    selected file, no conversion requested"
         if need_conv:
             # do the conversion
             node.text_reopen( handle )
