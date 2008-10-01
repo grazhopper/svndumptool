@@ -67,9 +67,10 @@ def eolfix_callback_regexp( dumpfile, node, expressions ):
     """
 
     for searchpath, re in expressions:
-        name = node.get_path()
-        if not searchpath:
-            name = name.split( "/" )[-1]
+        if searchpath:
+            name = node.get_path()
+        else:
+            name = node.get_name()
         if re.search( name ) != None:
             return True
     return False

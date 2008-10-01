@@ -258,7 +258,7 @@ class ApplyAutoprops:
         @param node: Node to set the properties on.
         """
 
-        name = node.get_path().split( "/" )[-1]
+        name = node.get_name()
         for regex, properties in self.autoprops:
             if regex.match( name ):
                 for pname, pval in properties:

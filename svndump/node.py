@@ -114,6 +114,15 @@ class SvnDumpNode:
         @param path: New path of this node."""
         self.__path = path
 
+    def get_name( self ):
+        """
+        Returns the name of this node.
+
+        @rtype:  string
+        @return: The name of this node.
+        """
+        return self.__path.split( "/" )[-1]
+
     def get_action( self ):
         """
         Returns the action of this node.
