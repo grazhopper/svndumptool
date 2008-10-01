@@ -236,7 +236,10 @@ class ApplyAutoprops:
                 outDump.add_rev( inDump.get_rev_props() )
                 for index in range( 0, inDump.get_node_count() ):
                     node = inDump.get_node( index )
-                    if node.get_action() == "add":
+                    action = node.get_action()
+                    if action in ( "add", "replace" ):
+                        self._set_properties( node )
+                    elif action == "change" and node.has_properties():
                         self._set_properties( node )
                     outDump.add_node( node )
                 inDump.read_next_rev()
