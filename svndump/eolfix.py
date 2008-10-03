@@ -385,7 +385,7 @@ class SvnDumpEolFix:
                 # do not convert with --dry-run or when there's nothing to fix
                 need_conv = False
         else:
-            print "    selected file, no conversion requested"
+            print "    selected file, no conversion required"
         if need_conv:
             # do the conversion
             node.text_reopen( handle )
