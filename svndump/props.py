@@ -151,22 +151,40 @@ class SvnConfigParser:
         """
         self._sections = {}
         ifd = open( filename, "r" )
-        section = ""
+        section = None
+        key = None
+        val = None
         for line in ifd:
-            line = line.strip()
-            if len(line) == 0 or line[0] in ( ';', '#' ):
+            line = line.rstrip()
+            sline = line.lstrip()
+            if line != sline:
+                # continuation, append to the value
+                if key != None:
+                    val += " " + sline
+            elif key != None:
+                # end of continuation, store the key/value pair
+                if section != None:
+                    self._sections[section][key] = val
+                key = None
+            if len(sline) == 0 or sline[0] in ( ';', '#' ):
                 # empty line or comment line
                 pass
             elif line[0] == '[' and line[-1] == ']':
-                # section
-                section = line[1:-1].strip()
+                # new section
+                section = line[1:-1]
+                self._sections[section] = {}
             else:
-                parts = line.split( "=", 1 )
-                key = parts[0].strip()
-                if len( parts ) == 2 and len(key) > 0 and len(section) > 0:
-                    if not self._sections.has_key( section ):
-                        self._sections[section] = {}
-                    self._sections[section][key] = parts[1].strip()
+                ceq = line.find( "=" )
+                cco = line.find( ":" )
+                if ceq < 0 or (cco < ceq and cco >= 0):
+                    ceq = cco
+                if ceq >= 0:
+                    # key/value pair
+                    key = line[0:ceq].rstrip()
+                    val = line[ceq+1:].lstrip()
+        # store the last key/value pair
+        if section != None and key != None:
+            self._sections[section][key] = val
 
     def get( self, section, key ):
         """
@@ -233,6 +251,7 @@ class ApplyAutoprops:
             inDump.read_next_rev()
             outDump.create_like( self.outputfilename, inDump )
             while inDump.has_revision():
+                print "revision %d" % inDump.get_rev_nr();
                 outDump.add_rev( inDump.get_rev_props() )
                 for index in range( 0, inDump.get_node_count() ):
                     node = inDump.get_node( index )
@@ -259,10 +278,15 @@ class ApplyAutoprops:
         """
 
         name = node.get_name()
+        propkeys = ""
         for regex, properties in self.autoprops:
             if regex.match( name ):
                 for pname, pval in properties:
                     node.set_property( pname, pval )
+                    propkeys += ", " + pname
+        if len(propkeys) > 0:
+            print "  " + node.get_path()
+            print "    set " + propkeys[2:]
 
     def _read_config( self ):
         """
