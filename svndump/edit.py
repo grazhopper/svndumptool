@@ -253,7 +253,7 @@ def __svndump_edit_opt_propdel( option, opt, value, parser, *args ):
         raise OptionValueError( "Cannot use '%s' without first setting a filename with '-f'." % opt )
     
     edit = args[0]
-    edit.propdel( parser.values.revision, parser.values.filename, value )
+    edit.propdel( parser.values.revnr, parser.values.filename, value )
     
 def svndump_edit_cmdline( appname, args ):
     """
