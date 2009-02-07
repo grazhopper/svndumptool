@@ -308,19 +308,22 @@ in the merged file make sense.
 
 svndumptool.py merge [options]
 
-options:
+Options:
   --version             show program's version number and exit
   -h, --help            show this help message and exit
-  -iINFILE, --input-file=INFILE
+  -i INFILE, --input-file=INFILE
                         adds an input dump filename.
-  -r FROM TO, --rename= FROM TO
+  -r  FROM TO, --rename= FROM TO
                         adds a rename to the previously added file.
-  -xDIR, --mkdir-exclude=DIR
+  -s  SEARCH REPLACE, --regex-substitute= SEARCH REPLACE
+                        performs regular expression search and replace
+  -x DIR, --mkdir-exclude=DIR
                         exclude mkdir from the previously added file.
-  -oOUTFILE, --output-file=OUTFILE
+  -o OUTFILE, --output-file=OUTFILE
                         sets the output filename.
-  -dDIR, --mkdir=DIR    create an additional directory.
-  -mMSG, --message=MSG  logmessage for the directory creating revision.
+  -d DIR, --mkdir=DIR   create an additional directory.
+  -m MSG, --message=MSG
+                        logmessage for the directory creating revision.
   --example             show a little usage example.
 
 Known bugs:
@@ -328,6 +331,7 @@ Known bugs:
    revision dates. Use 'svndumptool.py check -d dumpfile' to check the
    revision dates of a dump file.
  * mkdir-exclude may fail in some cases in cvs2svn created dumps.
+ * using -r and -s options on the same path will have unknown results
 
 
 

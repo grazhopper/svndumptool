@@ -21,6 +21,7 @@
 #===============================================================================
 
 import sys
+import re
 from optparse import OptionParser
 
 from svndump import __version
@@ -57,6 +58,8 @@ class SvnDumpMerge:
         self.__in_files = []
         # path renames [ [ ( from, to ), ... ], ... ]
         self.__in_renames = []
+        # path regex substitutions [ [ ( search, replace ), ... ], ... ]
+        self.__in_regex_subs = []
         # mkdir excludes [ {}, ... ]
         self.__in_excludes = []
         # revision number mappings [ {}, ... ]
@@ -93,6 +96,7 @@ class SvnDumpMerge:
         index = len( self.__in_files )
         self.__in_files = self.__in_files + [ filename ]
         self.__in_renames = self.__in_renames + [ [] ]
+        self.__in_regex_subs = self.__in_regex_subs + [ [] ]
         self.__in_excludes = self.__in_excludes + [ {} ]
         self.__in_rev_nr_maps = self.__in_rev_nr_maps + [ {} ]
         return index
@@ -122,6 +126,24 @@ class SvnDumpMerge:
         # add the rename
         self.__in_renames[index] = self.__in_renames[index] + \
                                 [ (prefixFrom, prefixTo ) ]
+
+    def add_regex_sub( self, index, reSearch, reReplace ):
+        """
+        Adds a path prefix rename.
+
+        @type index: integer
+        @param index: Index of the dump file.
+        @type reSearch: string
+        @param reSearch: Search regular expression.
+        @type reReplace: string
+        @param reReplace: Replace regular expression.
+        """
+
+        # compile regex object
+        reSearch = re.compile(reSearch)
+        # add the rename
+        self.__in_regex_subs[index] = self.__in_regex_subs[index] + \
+                                [ (reSearch, reReplace ) ]
 
     def add_mkdir_exclude( self, index, dirName ):
         """
@@ -296,14 +318,13 @@ class SvnDumpMerge:
             fromPath = node.get_copy_from_path()
             fromRev = node.get_copy_from_rev()
         change = 0
-        newPath = self.__rename_path( path, self.__in_renames[dumpIndex] )
+        newPath = self.__rename_path( path, dumpIndex )
         newFromPath = fromPath
         newFromRev = fromRev
         if path != newPath:
             change = 1
         if fromRev > 0:
-            newFromPath = self.__rename_path( fromPath,
-                                              self.__in_renames[dumpIndex] )
+            newFromPath = self.__rename_path( fromPath, dumpIndex )
             if fromPath != newFromPath:
                 change = 1
             newFromRev = self.__in_rev_nr_maps[dumpIndex][fromRev]
@@ -324,7 +345,7 @@ class SvnDumpMerge:
             newNode.set_text_node( node )
         return newNode
 
-    def __rename_path( self, path, renames ):
+    def __rename_path( self, path, dumpIndex ):
         """
         Applies the renames to the path and returns the new path.
 
@@ -336,11 +357,11 @@ class SvnDumpMerge:
         @return Renamed path.
         """
 
-        # ensure that path does not a leading slash
+        # ensure that path does not have a leading slash
         if len(path) > 1 and path[0:1] == "/":
             path = path[1:]
         sPath = path + "/"
-        for sPfx, dPfx in renames:
+        for sPfx, dPfx in self.__in_renames[dumpIndex]:
             sLen = len( sPfx )
             if sPfx == "/":
                 return dPfx + path
@@ -351,6 +372,8 @@ class SvnDumpMerge:
                 else:
                     # there's a suffix
                     return dPfx + path[sLen:]
+        for reSearch, sReplace in self.__in_regex_subs[dumpIndex]:
+            path = reSearch.sub(sReplace, path, count=1)
         return path
 
     def __remove_empty_dumps( self ):
@@ -371,6 +394,7 @@ class SvnDumpMerge:
                 eidx = index + 1
                 self.__in_files[index:eidx] = []
                 self.__in_renames[index:eidx] = []
+                self.__in_regex_subs[index:eidx] = []
                 self.__in_rev_nr_maps[index:eidx] = []
                 self.__in_dumps[index:eidx] = []
                 self.__in_rev_dates[index:eidx] = []
@@ -392,6 +416,14 @@ def __svndump_merge_opt_r( option, opt, value, parser, *args ):
     merge = args[0]
     vars = args[1]
     merge.add_rename( vars["fileIndex"], value[0], value[1] )
+
+def __svndump_merge_opt_s( option, opt, value, parser, *args ):
+    """
+    Option parser callback for regex substitution '-s search replace'.
+    """
+    merge = args[0]
+    vars = args[1]
+    merge.add_regex_sub( vars["fileIndex"], value[0], value[1] )
 
 def __svndump_merge_opt_x( option, opt, value, parser, *args ):
     """
@@ -490,6 +522,12 @@ def svndump_merge_cmdline( appname, args ):
                        dest=" from to",
                        nargs=2, type="string",
                        help="adds a rename to the previously added file." )
+    parser.add_option( "-s", "--regex-substitute",
+                       action="callback", callback=__svndump_merge_opt_s,
+                       callback_args=cbargs,
+                       dest=" ""search"" ""replace""",
+                       nargs=2, type="string",
+                       help="performs regular expression search and replace" )
     parser.add_option( "-x", "--mkdir-exclude",
                        action="callback", callback=__svndump_merge_opt_x,
                        callback_args=cbargs,
