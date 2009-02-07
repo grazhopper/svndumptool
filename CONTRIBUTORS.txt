@@ -37,3 +37,6 @@ Ryan Schmidt
  - Fix regular expression in eolfix example.
  - Fix typos and spelling issues in README.txt.
 
+Tomas Juknevicius
+ - Bugfix in edit --propdel.
+
