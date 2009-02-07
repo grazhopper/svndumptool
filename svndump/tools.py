@@ -191,6 +191,8 @@ class SvnDumpCheck:
         self.__check_dates = False
         # check md5 sums
         self.__check_md5 = False
+        # verbose output
+        self.__verbose = False
 
     def set_check_actions( self, docheck ):
         """
@@ -222,6 +224,13 @@ class SvnDumpCheck:
 
         self.__check_md5 = docheck
 
+    def set_verbose( self, doverbose ):
+        """
+        Set for verbose output mode
+        """
+
+        self.__verbose = doverbose
+
     def execute( self, dumpfilename ):
         """
         Check a dump file.
@@ -240,19 +249,25 @@ class SvnDumpCheck:
 
         while dump.read_next_rev():
             self.__next_rev()
+            revnr = dump.get_rev_nr()
+            if self.__verbose:
+                self.__print_rev( revnr )
             if self.__check_dates:
                 date = dump.get_rev_date()
                 if date < prev_date:
                     rc = 1
-                    self.__print_rev( dump.get_rev_nr() )
-                    print "    rev date: %s  %10d.%06d" % (
+                    self.__print_rev( revnr )
+                    print "    ERROR - rev date: %s  %10d.%06d" % (
                         dump.get_rev_date_str(), date[0], date[1] )
-                    print "    previous: %s  %10d.%06d" % (
+                    print "      earlier than previous: %s  %10d.%06d" % (
                         create_svn_date_str( prev_date ),
                         prev_date[0], prev_date[1] )
                 prev_date = date
             for node in dump.get_nodes_iter():
                 self.__next_node()
+                if self.__verbose:
+                    self.__print_node( revnr, node )
+                    self.__print_action( node )
                 if self.__check_md5 and node.has_text():
                     md = md5.new()
                     handle = node.text_open()
@@ -266,16 +281,17 @@ class SvnDumpCheck:
                     md5sum = md.hexdigest()
                     if node.get_text_md5() != md5sum:
                         rc = 1
-                        self.__print_node( dump.get_rev_nr(), node )
-                        print "      md5 calc: %s" % md5sum
-                        print "      md5 node: %s" % node.get_text+md5()
+                        self.__print_node( revnr, node )
+                        print "      ERROR - md5 calc: %s" % md5sum
+                        print "        diff than md5 node: %s" % (
+                                node.get_text + md5() )
                 if self.__check_actions:
-                    msglist = self.__check_action( dump.get_rev_nr(), node )
+                    msglist = self.__check_action( revnr, node )
                     if msglist != None:
                         rc = 1
-                        self.__print_node( dump.get_rev_nr(), node )
+                        self.__print_node( revnr, node )
                         for msg in msglist:
-                            print "      " + msg
+                            print "      ERROR - " + msg
 
         dump.close()
         print [ "OK", "Not OK" ][ rc ]
@@ -303,6 +319,7 @@ class SvnDumpCheck:
         Clears the node_printed flag.
         """
         self.__node_printed = False
+        self.__action_printed = False
 
     def __print_node( self, revnr, node ):
         """
@@ -317,6 +334,22 @@ class SvnDumpCheck:
             self.__node_printed = True
             self.__print_rev( revnr )
             print "    Node: %s" % node.get_path()
+
+    def __print_action( self, node ):
+        """
+        Prints the node action if not already done.
+
+        @type node: SvnDumpNode
+        @param node: Current node.
+        """
+        if not self.__action_printed:
+            self.__action_printed = True
+            actionmsg = "    Action: %s" % node.get_action()
+            if node.has_copy_from():
+                actionmsg += ", copied from r%d %s" % (
+                        node.get_copy_from_rev(),
+                        node.get_copy_from_path() )
+            print actionmsg
 
     def __check_action( self, revnr, node ):
         """
@@ -501,6 +534,9 @@ def svndump_check_cmdline( appname, args ):
     parser.add_option( "-A", "--all-checks",
                        action="store_true", dest="check_all", default=False,
                        help="do all checks" )
+    parser.add_option( "-v", "--verbose",
+                       action="store_true", dest="verbose", default=False,
+                       help="verbose output" )
     (options, args) = parser.parse_args( args )
 
     checks = False
@@ -513,6 +549,8 @@ def svndump_check_cmdline( appname, args ):
     if options.check_md5 or options.check_all:
         check.set_check_md5( True )
         checks = True
+    if options.verbose:
+        check.set_verbose( True )
 
     if not checks:
         print "Please specify at least one check option."

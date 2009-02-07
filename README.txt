@@ -84,6 +84,7 @@ options:
   -d, --check-dates    check that svn:date increases
   -m, --check-md5      check md5 sums of the files
   -A, --all-checks     do all checks
+  -v, --verbose        verbose output
 
 Known bugs:
  * cvs2svn created dumps may cause false negatives.
@@ -218,7 +219,7 @@ Known bugs:
  * EOL's aren't fixed in a file which was copied and the old file was not a
    text file.
  * Diff shows a few Text changes after eolfix !?!
-   
+
 
 
 Export
