@@ -40,3 +40,8 @@ Ryan Schmidt
 Tomas Juknevicius
  - Bugfix in edit --propdel.
 
+Bryce Schober
+ - Add --verbose mode to check command, more explicit output.
+ - Add regular expression rename support to merge command.
+ - Move history and check code to SvnDumpFileWithHistory.
+
