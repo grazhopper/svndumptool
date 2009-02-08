@@ -20,6 +20,8 @@
 #
 #===============================================================================
 
+import md5
+
 from common import *
 from node import SvnDumpNode
 
@@ -64,9 +66,6 @@ class SvnDumpFile:
         self.__line__counting = 1
         self.__line_nr = 0
         self.__tag_start_line_nr = 0
-
-        # variables and their default value
-
 
     def __read_line( self, raiseEof ):
         """
@@ -824,5 +823,446 @@ class SvnDumpFile:
             self.__file.write( "\n" )
         # CR after each node
         self.__file.write( "\n" )
+
+
+class SvnDumpFileWithHistory( SvnDumpFile ):
+
+    def __init__( self ):
+        SvnDumpFile.__init__( self )
+        # errors
+        self.ERR_REV_DATE_OLDER      = 1
+        self.ERR_NODE_MD5_FAIL       = 2
+        self.ERR_NODE_EXISTS         = 3
+        self.ERR_NODE_NO_PARENT      = 4
+        self.ERR_NODE_PARENT_NOT_DIR = 5
+        self.ERR_NODE_NO_COPY_SRC    = 6
+        self.ERR_NODE_GONE           = 7
+        # node history for this
+        self.__enable_nodehist = False
+        self.__nodehist = {}
+        # check actions
+        self.__enable_check_node_actions = False
+        # check dates
+        self.__enable_check_rev_dates = False
+        self.__prev_date = (0,0)
+        # check md5 sums
+        self.__enable_check_node_md5 = False
+        # revision errors
+        self.__rev_errors = {}
+
+    def set_enable_node_history( self, enable ):
+        """
+        Set the check md5 sums flag to the given value.
+
+        @type docheck: bool
+        @param docheck: New value for the flag.
+        """
+
+        self.__enable_nodehist = enable
+
+    def set_check_actions( self, docheck ):
+        """
+        Set the check actions flag to the given value.
+
+        @type docheck: bool
+        @param docheck: New value for the flag.
+        """
+
+        self.__enable_check_node_actions = docheck
+        # checking node actions requires keeping node history,
+        # but it can also be enabled otherwise, so don't disable
+        # it if not checking node actions
+        if self.__enable_check_node_actions:
+            self.set_enable_node_history( True )
+
+    def set_check_dates( self, docheck ):
+        """
+        Set the check dates flag to the given value.
+
+        @type docheck: bool
+        @param docheck: New value for the flag.
+        """
+
+        self.__enable_check_rev_dates = docheck
+
+    def set_check_md5( self, docheck ):
+        """
+        Set the check md5 sums flag to the given value.
+
+        @type docheck: bool
+        @param docheck: New value for the flag.
+        """
+
+        self.__enable_check_node_md5 = docheck
+
+
+    def get_rev_errors( self, revnr = None ):
+        """
+        Returns a list of the dump errors for the given revision. (Obviously)
+        It will only report errors enabled by set_check_xxxx.
+
+        @type revnr: int
+        @param revnr: (Optional) Number of desired revision
+        @rtype: list of lists (of lists)
+        @return: Each element in the list is a list representing one error,
+            with the following members:
+                - The error type (SvnDumpFile.ERR_XXXX)
+                - A list of error information:
+                    - for ERR_REV_DATE_OLDER: [ revdatestr, prevdatestr ]
+                    - for ERR_NODE_MD5_FAIL: [ path, md5calc, md5node ]
+                    - for ERR_NODE_XXXX: [ path, action, ... ]
+                        - for ERR_NODE_NO_PARENT: [ path, action, parentpath ]
+                        - for ERR_NODE_PARENT_NOT_DIR: [ path, action, parentpath ]
+                        - for ERR_NODE_NO_COPY_SRC: [ path, action, cfrev, cfpath ]
+            Errors in this list are guaranteed to be in order of revision
+            errors, then node errors in the same order as when iterated via
+            get_nodes_iter().
+        """
+
+        # use the current rev number if not gien
+        if revnr is None:
+            revnr = self.get_rev_nr()
+        if self.__rev_errors.has_key(revnr):
+            return self.__rev_errors[revnr]
+        else:
+            return None
+
+    def __add_rev_error( self, revnr, errinfo ):
+        """
+        Adds the given error information to the ListDict for the given revision
+
+        @type revnr: int
+        @param revnr: (Optional) Number of desired revision
+        @type errinfo: list
+        @param errinfo: Information about the error
+        """
+
+        if self.__rev_errors.has_key(revnr):
+            self.__rev_errors[revnr].append( errinfo )
+        else:
+            self.__rev_errors[revnr] = [ errinfo ]
+
+    def __check_rev_dates( self ):
+        """
+        Check the date for the current revision
+        """
+        if self.__enable_check_rev_dates:
+            date = self.get_rev_date()
+            if date < self.__prev_date:
+                self.__add_rev_error( self.get_rev_nr(),
+                        [ self.ERR_REV_DATE_OLDER, [ self.get_rev_date_str(),
+                        create_svn_date_str( self.__prev_date ) ] ], )
+            self.__prev_date = date
+
+    def __check_node_md5( self, node ):
+        """
+        Check the md5sum for the current node
+
+        @type node: SvnDumpNode
+        @param node: Current node
+        """
+        if self.__enable_check_node_md5 and node.has_text():
+            md = md5.new()
+            handle = node.text_open()
+            data = node.text_read( handle )
+            n = 0
+            while len(data) > 0:
+                n = n + len(data)
+                md.update( data )
+                data = node.text_read( handle )
+            node.text_close( handle )
+            md5sum = md.hexdigest()
+            if node.get_text_md5() != md5sum:
+                self.__add_rev_error( self.get_rev_nr(),
+                        [ self.ERR_NODE_MD5_FAIL,
+                        [ node.get_path(), md5sum, node.get_text_md5() ] ], )
+
+    def __nodehist_init( self ):
+        """
+        Initialize the node history
+        """
+
+        # the root always exists and is a directory
+        self.__nodehist = { "": [ "D", [ 0, 999999999 ] ] }
+        self.__rev_errors.clear()
+
+    def nodehist_get_kind( self, revnr, path ):
+        """
+        Returns the kind of a node if it exists, else None.
+
+        @type revnr: int
+        @param revnr: Current revision number.
+        @type path: string
+        @param path: Path of a node.
+        @rtype: string
+        @return: "D" for dirs, "F" for files or None.
+        """
+        return self.__nodehist_get_kind( revnr, path )
+
+    def __nodehist_get_kind( self, revnr, path ):
+        """
+        Returns the kind of a node if it exists, else None.
+
+        @type revnr: int
+        @param revnr: Current revision number.
+        @type path: string
+        @param path: Path of a node.
+        @rtype: string
+        @return: "D" for dirs, "F" for files or None.
+        """
+        if not self.__nodehist.has_key( path ):
+            return None
+        nodehist = self.__nodehist[ path ]
+        i = self.__nodehist_get_rev_index( nodehist, revnr )
+        if i == None:
+            return None
+        return nodehist[0][0]
+
+    def __nodehist_get_rev_index( self, nodehist, revnr ):
+        """
+        Returns the index into the node history or None.
+
+        @type nodehist: list
+        @param nodehist: History of a node.
+        @type revnr: int
+        @param revnr: Current revision number.
+        """
+        i = len(nodehist) - 1
+        while i > 0 and revnr < nodehist[i][0]:
+            i -= 1
+        if i == 0:
+            return None
+        if revnr > nodehist[i][1] and nodehist[i][1] >= 0:
+            return None
+        return i
+
+    def __nodehist_add_node( self, revnr, node ):
+        """
+        Adds a node to the history, recursively if it has copy-from path/rev.
+
+        @type revnr: int
+        @param revnr: Current revision number.
+        @type node: SvnDumpNode
+        @param node: Node to add.
+        """
+        path = node.get_path()
+        if not self.__nodehist.has_key( path ):
+            # create revision list for path
+            kind = "D"
+            if node.get_kind() == "file":
+                kind = "F"
+            self.__nodehist[ path ] = [ ( kind ) ]
+        # add revision range
+        self.__nodehist[ path ].append( [ revnr, -1 ] )
+        kind = self.__nodehist[ path ][0][0]
+        # continue only if it's a dir with copy-from
+        if kind == "F" or not node.has_copy_from():
+            return
+        # recursive copy
+        cfpath = node.get_copy_from_path() + "/"
+        cfpathlen = len(cfpath)
+        cfrev = node.get_copy_from_rev()
+        path += "/"
+        for cfnodepath in self.__nodehist.keys()[:]:
+            if cfnodepath.startswith( cfpath ):
+                cfnodehist = self.__nodehist[cfnodepath]
+                i = self.__nodehist_get_rev_index( cfnodehist, cfrev )
+                if i != None:
+                    npath = path + cfnodepath[cfpathlen:]
+                    # add new path
+                    if not self.__nodehist.has_key( npath ):
+                        # create revision list for npath
+                        kind = "D"
+                        if node.get_kind() == "file":
+                            kind = "F"
+                        self.__nodehist[ npath ] = [ cfnodehist[0] ]
+                    # add revision range
+                    self.__nodehist[ npath ].append( [ revnr, -1 ] )
+
+
+    def __nodehist_delete_node( self, revnr, node ):
+        """
+        Deletes a node from the history, recursively if it is a directory.
+
+        @type revnr: int
+        @param revnr: Current revision number.
+        @type node: SvnDumpNode
+        @param node: Node to add.
+        """
+        # set end revision
+        path = node.get_path()
+        self.__nodehist[ path ][-1][1] = revnr - 1
+        kind = self.__nodehist[ path ][0][0]
+        # continue only if it's a dir
+        if kind == "F":
+            return
+        # recursive delete
+        path += "/"
+        for nodepath in self.__nodehist.keys()[:]:
+            if nodepath.startswith( path ):
+                nodehist = self.__nodehist[nodepath]
+                if nodehist[-1][1] == -1:
+                    nodehist[-1][1] = revnr - 1
+
+    def __nodehist_process_node( self, node ):
+        """
+        Checks the action of a node and keeps it's history.
+
+        @type node: SvnDumpNode
+        @param node: Current node.
+        """
+        if not self.__enable_nodehist:
+            return
+        revnr = self.get_rev_nr()
+        path = node.get_path()
+        action = node.get_action()
+        kind = self.__nodehist_get_kind( revnr, path )
+        err = False
+        if action == "add":
+            if self.__enable_check_node_actions:
+                # path must not exist
+                if kind != None:
+                    self.__add_rev_error( revnr, [ self.ERR_NODE_EXISTS,
+                            [ path, action ] ], )
+                    err = True
+                else:
+                    # parent must be a dir
+                    slash = path.rfind( "/" )
+                    if slash > 0:
+                        ppath = path[:slash]
+                        pkind = self.__nodehist_get_kind( revnr, ppath )
+                        if pkind == None:
+                            self.__add_rev_error( revnr,
+                                    [ self.ERR_NODE_NO_PARENT,
+                                    [ path, action, ppath ] ], )
+                            err = True
+                        elif pkind != "D":
+                            self.__add_rev_error( revnr,
+                                    [ self.ERR_NODE_PARENT_NOT_DIR,
+                                    [ path, action, ppath ] ], )
+                            err = True
+                    # copy-from must exist
+                    if node.has_copy_from():
+                        cfrev = node.get_copy_from_rev()
+                        cfpath = node.get_copy_from_path()
+                        if self.__nodehist_get_kind( cfrev,cfpath ) == None:
+                            self.__add_rev_error( revnr,
+                                    [ self.ERR_NODE_NO_COPY_SRC,
+                                    [ path, action, cfrev, cfpath ] ], )
+                            err = True
+            if not err or self.__state == self.ST_WRITE:
+                self.__nodehist_add_node( revnr, node )
+        elif action == "delete":
+            if self.__enable_check_node_actions:
+                # path must exist
+                if kind == None:
+                    self.__add_rev_error( revnr,
+                            [ self.ERR_NODE_GONE, [ path, action ] ], )
+                    err = True
+            if not err or self.__state == self.ST_WRITE:
+                self.__nodehist_delete_node( revnr, node )
+        else:
+            if self.__enable_check_node_actions:
+                # path must exist
+                if kind == None:
+                    self.__add_rev_error( revnr,
+                            [ self.ERR_NODE_GONE, [ path, action ] ], )
+                    err = True
+            # replace = delete & add; changes can be ignored
+            if action == "replace" and node.has_copy_from():
+                if not err or self.__state == self.ST_WRITE:
+                    self.__nodehist_delete_node( revnr, node )
+                    self.__nodehist_add_node( revnr, node )
+
+    def open( self, filename ):
+        """
+        Open a dump file for reading and read the header.
+        @type filename: string
+        @param filename: Name of an existing dump file.
+        """
+
+        SvnDumpFile.open( self, filename )
+        self.__nodehist_init()
+
+    def create_with_rev_0( self, filename, uuid, rev0date ):
+        """
+        Create a new dump file starting with revision 0.
+
+        @type filename: string
+        @param filename: Name of the new dump file.
+        @type uuid: string
+        @param uuid: UUID of the new dump file or None.
+        @type rev0date: string
+        @param rev0date: Svn date string for revision 0.
+        """
+
+        SvnDumpFile.create_with_rev_0( self, filename, uuid, rev0date )
+        self.__nodehist_init()
+
+    def create_with_rev_n( self, filename, uuid, firstRevNr ):
+        """
+        Create a new dump file.
+
+        @type filename: string
+        @param filename: Name of the new dump file.
+        @type uuid: string
+        @param uuid: UUID of the new dump file or None.
+        @type firstRevNr: integer
+        @param firstRevNr: First revision number (>0).
+        """
+
+        SvnDumpFile.create_with_rev_n( self, filename, uuid, firstRevNr )
+        self.__nodehist_init()
+
+    def close( self ):
+        """
+        Close this svn dump file.
+        """
+
+        SvnDumpFile.close( self )
+        # +++ maybe close should call a protected _close() function which
+        # does this here? (clearing things too often doesn't hurt too much)
+        self.__nodehist = {}
+        self.__rev_errors.clear()
+        self.__prev_date = (0,0)
+
+    def read_next_rev( self ):
+        """
+        Read the next revision.
+
+        @rtype: bool
+        @return: False if EOF occured.
+        """
+
+        SvnDumpFile.read_next_rev( self )
+        self.__check_rev_dates()
+        for node in self.get_nodes_iter():
+            self.__check_node_md5( node )
+            self.__nodehist_process_node( node )
+
+    def add_rev( self, revProps ):
+        """
+        Add a new revision to this dump file.
+
+        @type revProps: dict( string -> string )
+        @param revProps: A dict with revision properties.
+        """
+
+        SvnDumpFile.add_rev( self, revProps )
+        self.__check_rev_dates()
+
+    def add_node( self, node ):
+        """
+        Add a node to the current revision.
+
+        This method uses SvnDumpNode.write_text_to_file().
+
+        @type node: SvnDumpNode
+        @param node: The node to add.
+        """
+
+        SvnDumpFile.add_node( self, node )
+        # self.__check_node_md5() # here for completeness, but redundant!
+        self.__nodehist_process_node( node )
 
 
