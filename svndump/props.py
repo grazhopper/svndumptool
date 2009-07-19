@@ -24,6 +24,7 @@
 from optparse import OptionParser
 import os
 import re
+import sys
 
 from svndump import __version, copy_dump_file, SvnDumpFile
 
@@ -349,6 +350,48 @@ class ApplyAutoprops:
             properties.append( ( name, value ) )
         return tuple( properties )
 
+
+class SVNConfigFile:
+    '''
+    Determine a default SVN configuration file for the given system type.
+    '''
+    def __init__( self, envvar=None, pathelements=None, platform=None ):
+        if platform is None:
+            platform = sys.platform
+
+        if platform == 'win32':
+            self.envsep = '%'
+            self.envstr = lambda: '%s%s%s' % (self.envsep, self.envvar, self.envsep)
+            if envvar is None:
+                envvar = 'APPDATA'
+            if pathelements is None:
+                pathelements = ['Subversion', 'config']
+        else:
+            self.envsep = '$'
+            self.envstr = lambda: '%s%s' % (self.envsep, self.envvar)
+            if envvar is None:
+                envvar = 'HOME'
+            if pathelements is None:
+                pathelements = ['.subversion', 'config']
+
+        self.envvar = envvar
+        self.pathelements = pathelements
+
+    def path(self):
+        '''
+        System compatible representation of the path (with the environment
+        variable expanded.)
+        '''
+        home = os.environ[self.envvar]
+        return os.path.join(home, *self.pathelements)
+
+    def __str__(self):
+        '''
+        Human readable string representation of the path.
+        '''
+        return os.path.join(self.envstr(), *self.pathelements)
+
+
 def svndump_apply_autoprops_cmdline( appname, args ):
     """
     Parses the commandline and applies the automatic properties.
@@ -365,12 +408,13 @@ def svndump_apply_autoprops_cmdline( appname, args ):
     @return: Return code (0 = OK).
     """
 
+    svnconf = SVNConfigFile()
+
     usage = "usage: %s [options] inputdump outputdump" % appname
     parser = OptionParser( usage=usage, version="%prog "+__version )
     parser.add_option( "--config-file",
                        action="store", dest="configfile", default=None,
-                       help="Subversion config file " +
-                            "(default: $HOME/.subversion/config)." )
+                       help="Subversion config file (default: %s)." % (svnconf, ))
 
     (options, args) = parser.parse_args( args )
 
@@ -380,8 +424,7 @@ def svndump_apply_autoprops_cmdline( appname, args ):
 
     configfile = options.configfile
     if configfile == None:
-        home = os.environ["HOME"]
-        configfile = os.path.join( home, ".subversion", "config" )
+        configfile = svnconf.path()
 
     aa = ApplyAutoprops( args[0], args[1], configfile )
     return aa.apply()
