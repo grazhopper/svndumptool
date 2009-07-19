@@ -25,7 +25,7 @@ from optparse import OptionParser
 
 from svndump import __version, copy_dump_file
 from common import create_svn_date_str
-from file import SvnDumpFileWithHistory
+from file import SvnDumpFileWithHistory, SvnDumpFile
 
 __doc__ = """Various tools."""
 
@@ -93,6 +93,16 @@ class SvnDumpExport:
         if not self.__exports.has_key( revnr ):
             self.__exports[revnr] = {}
         self.__exports[revnr][repospath] = filename
+
+    def has_exports( self ):
+        '''
+        Were files listed for export?
+
+        @rtype: boolean
+        @return: True means there are files listed to
+                 export, False means there are not.
+        '''
+        return len(self.__exports)>0
 
     def execute( self, dumpfilename, directory ):
         """
@@ -167,6 +177,12 @@ def svndump_export_cmdline( appname, args ):
                        help="set the directory for the exported files." )
     (options, args) = parser.parse_args( args )
 
+    if not export.has_exports():
+        print >>sys.stderr, "Warning: there are no files specified to export."
+        print >>sys.stderr, "         Use -e/--export to specify files"
+        print >>sys.stderr
+        parser.print_help(file=sys.stderr)
+        return 1
     return export.execute( args[0], options.dir )
 
 
