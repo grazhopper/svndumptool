@@ -45,3 +45,11 @@ Bryce Schober
  - Add regular expression rename support to merge command.
  - Move history and check code to SvnDumpFileWithHistory.
 
+Kevin Grover
+ - Before exporting check that export files have been specified.
+ - Teach apply-autoprops how to find subversions config on windows.
+ - When available use hashlib instead of md5.
+
+Matthias Troffaes
+ - Fix initialisation bug in merge (problem with -x).
+

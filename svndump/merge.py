@@ -395,6 +395,7 @@ class SvnDumpMerge:
                 self.__in_files[index:eidx] = []
                 self.__in_renames[index:eidx] = []
                 self.__in_regex_subs[index:eidx] = []
+                self.__in_excludes[index:eidx] = []
                 self.__in_rev_nr_maps[index:eidx] = []
                 self.__in_dumps[index:eidx] = []
                 self.__in_rev_dates[index:eidx] = []
