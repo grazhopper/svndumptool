@@ -22,6 +22,11 @@
 
 import time
 
+try:
+    import hashlib
+except ImportError:
+    import md5 as hashlib
+
 __doc__ = """Common functions and classes."""
 
 # perhaps some of these date functions can be replaced by
@@ -258,4 +263,12 @@ class ListDict( dict ):
         for key in self.__index:
             ret.append( dict.__getitem__( self, key ) )
         return ret
+
+def sdt_md5():
+    """
+    Returns a new md5 object.
+
+    For compatibility with python <2.5.
+    """
+    return hashlib.md5()
 

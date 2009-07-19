@@ -20,8 +20,6 @@
 #
 #===============================================================================
 
-import md5
-
 from common import *
 from node import SvnDumpNode
 
@@ -962,7 +960,7 @@ class SvnDumpFileWithHistory( SvnDumpFile ):
         @param node: Current node
         """
         if self.__enable_check_node_md5 and node.has_text():
-            md = md5.new()
+            md = sdt_md5()
             handle = node.text_open()
             data = node.text_read( handle )
             n = 0

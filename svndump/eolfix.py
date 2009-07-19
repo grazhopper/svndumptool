@@ -22,11 +22,11 @@
 
 from optparse import OptionParser
 import re
-import md5
 
 from svndump import __version
 from file import SvnDumpFile
 from node import SvnDumpNode
+from common import sdt_md5
 
 __doc__ = """Classes and functions for fixing EOL's in a dump file."""
 
@@ -392,7 +392,7 @@ class SvnDumpEolFix:
             outfilename = self.__temp_file_name()
             outfile = open( outfilename, "wb" )
             outlen = 0
-            md = md5.new()
+            md = sdt_md5()
             data = node.text_read( handle )
             carry = ""
             warning_printed = False

@@ -22,7 +22,6 @@
 
 from os import stat, remove
 from stat import ST_SIZE
-import md5
 
 from common import *
 
@@ -531,7 +530,7 @@ class SvnDumpNode:
         """
 
         handle = self.text_open()
-        md = md5.new()
+        md = sdt_md5()
         data = self.text_read( handle )
         n = 0
         while len(data) > 0:

@@ -25,7 +25,6 @@
 import os
 import sys
 import tempfile
-import md5
 import random
 import string
 
@@ -76,7 +75,7 @@ class SanitizeDumpFile(object):
 
     # Sanitize the data using a salted md5sum
     def hash(self, data ):
-        return md5.new(self.sanitize_salt+data).hexdigest()
+        return hashlib.md5(self.sanitize_salt+data).hexdigest()
 
     def sanitize_path(self, path ):
         parts = path.split('/')
@@ -102,7 +101,7 @@ class SanitizeDumpFile(object):
             newdatafile = os.fdopen(fd, "wb+")
             if self.__options.file_data_method == "whole":
                 # Calculate the salted md5sum
-                md5sum = md5.new()
+                md5sum = sdt_md5()
                 md5sum.update(self.sanitize_salt)
                 while True:
                     data = origdatafile.read(1024**2)

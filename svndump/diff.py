@@ -20,11 +20,11 @@
 #
 #===============================================================================
 
-import md5
 from optparse import OptionParser
 
 from svndump import __version
 from file import SvnDumpFile
+from common import sdt_md5
 
 __doc__ = """Diff functions and classes."""
 
@@ -649,8 +649,8 @@ class SvnDumpDiff:
             callback.node_diff( "TextLen", node1.get_text_length(), node2.get_text_length() )
         if node1.get_text_md5() != node2.get_text_md5():
             callback.node_diff( "TextMD5", node1.get_text_md5(), node2.get_text_md5() )
-        md1 = md5.new()
-        md2 = md5.new()
+        md1 = sdt_md5()
+        md2 = sdt_md5()
         handle1 = node1.text_open()
         handle2 = node2.text_open()
         str1 = node1.text_read( handle1 )

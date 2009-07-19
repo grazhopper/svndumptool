@@ -22,7 +22,6 @@
 
 import sys
 from optparse import OptionParser
-import md5
 
 from svndump import __version, copy_dump_file
 from common import create_svn_date_str
