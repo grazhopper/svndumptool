@@ -53,3 +53,6 @@ Kevin Grover
 Matthias Troffaes
  - Fix initialisation bug in merge (problem with -x).
 
+Serge Levin
+ - Bugfix: Missing UUID caused traceback.
+

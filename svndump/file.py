@@ -259,7 +259,7 @@ class SvnDumpFile:
         # get UUID
         fileoffset = self.__file.tell()
         tag = self.__get_tag( True )
-        if tag[0] != "UUID:":
+        if len( tag ) < 1 or tag[0] != "UUID:":
             # back to start of revision
             self.__file.seek( fileoffset )
             self.__uuid = None
