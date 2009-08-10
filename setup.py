@@ -9,13 +9,15 @@
 from distutils.core import setup
 import svndump
 
+dl_url_fmt = 'http://svn.borg.ch/svndumptool/$V/svndumptool-$V.tar.gz'
+
 args = {
     "name": 'svndumptool',
     "version": svndump.__version,
     "description": 'Package and cmdline tool for processing Subversion dump files.',
     "license": 'GNU General Public License (GPL)',
     "url": 'http://svn.borg.ch/svndumptool/',
-    "download_url": 'http://svn.borg.ch/svndumptool/0.5.0/svndumptool-0.5.0.tar.gz',
+    "download_url": dl_url_fmt.replace( "$V", svndump.__version ),
     "author": 'Martin Furter',
     "author_email": 'mf@rola.ch',
     "packages": [ 'svndump' ],
@@ -26,7 +28,9 @@ args = {
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'Programming Language :: Python',
-        'Topic :: Software Development :: Version Control :: SVN',
+        'Topic :: Software Development :: Version Control',
+        # they still don't know subversion! what a shame!
+        # 'Topic :: Software Development :: Version Control :: SVN',
     ],
 }
 
