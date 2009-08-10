@@ -24,6 +24,11 @@ Cleanup and possible bugs:
  * Transform-[rev]prop: Use re.sub() function.
  * check: Use node.get_kind() in history code, a few places use
    nodehist[0][0] to get the kind but should be only nodehist[0].
+ * Improve help texts, add short description like svn, add some longer
+   help texts, f.ex. --long-help or --example or ...
+ * Output all errors to stderr (even help text caused by an error).
+ * Output an error if an unknown command is requested.
+ * ls: Directorys should have a trailing / when output.
 
 
 Features:
@@ -35,6 +40,10 @@ Features:
  * Move tests from svndumptest.py into a package and add more tests...
  * Output an error if a file exists that should be opened for writing.
  * Edit: Add some more modifications. e.g. regex filename support, propset...
+ * Add support for sha1?
+ * Make export smarter. Now it wants the exact path and revision of a file.
+   The UI should also be improved. Add support for exporting dirs.
+ * Where applicable REV should accept HEAD and do the right thing.
 
 
 Ideas:
@@ -44,5 +53,6 @@ Ideas:
    and make SvnDumpMerge, SvnDumpEolFix, SvnDumpFilter and SvnDumpEdit
    subclasses of it. Those commands can then be chained, something like:
    SvnDumpFile -> SvnDumpEolFix -> copy_dump_file()
- * Streamy versions of SvnDumpFile and SvnDumpNode.
+ * Streamy versions of SvnDumpFile and SvnDumpNode (stdin/stdout).
+ * Add rev-prop support to transform-prop, remove transform-revprop.
 
