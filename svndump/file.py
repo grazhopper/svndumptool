@@ -672,7 +672,7 @@ class SvnDumpFile:
         @type author: string
         @param author: The author to set for this revision.
         """
-        self._rev_props["svn:author"] = author
+        self.__rev_props["svn:author"] = author
 
     def set_rev_log( self, logMsg):
         """
@@ -681,7 +681,7 @@ class SvnDumpFile:
         @type logMsg: string
         @param logMsg: The log message to set for this revision.
         """
-        self._rev_props["svn:log"] = logMsg
+        self.__rev_props["svn:log"] = logMsg
 
     def set_rev_prop_value( self, name, value ):
         """

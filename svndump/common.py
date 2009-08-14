@@ -20,6 +20,7 @@
 #
 #===============================================================================
 
+import calendar
 import time
 
 try:
@@ -43,14 +44,14 @@ def parse_svn_date_str( dateStr ):
     if dateStr[19] != "." or dateStr[26] != "Z":
         return (0,0)
     dat = time.strptime( dateStr[:19], "%Y-%m-%dT%H:%M:%S" )
-    return ( int(time.mktime(dat)), int( dateStr[20:26] ) )
+    return ( int(calendar.timegm(dat)), int( dateStr[20:26] ) )
 
 def create_svn_date_str( dateTuple ):
     """
     Creates a svn date string from a tuple containing time_t and micros.
     """
 
-    dat = time.localtime( dateTuple[0] )
+    dat = time.gmtime( dateTuple[0] )
     dstr = time.strftime( "%Y-%m-%dT%H:%M:%S", dat )
     mstr = ".%06dZ" % ( dateTuple[1] )
     return dstr + mstr
