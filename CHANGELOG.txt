@@ -2,7 +2,10 @@
 Changelog of svndumptool
 ========================
 
-0.6.0: Not released yet.
+0.6.0: Bugfix release (2009-08-14)
+
+ - Add "apply-autoprops" command.
+ - Fixed lots of bugs.
 
 
 0.5.0: Bugfix release (2008-06-16).
