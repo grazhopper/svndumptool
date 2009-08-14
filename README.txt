@@ -483,6 +483,13 @@ To generate the HTML docs just enter the following commands:
 Packaging
 =========
 
+Updating the version number
+---------------------------
+
+Check the following files:
+ - svndump/__init__.py
+ - svndumptool.spec
+
 Creating a source tar.gz
 ------------------------
 
