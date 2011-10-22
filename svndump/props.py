@@ -88,27 +88,27 @@ class PropertyTransformer:
     A class for transforming the properties of a dump file class.
     """
 
-    def __init__( self, propertyName, regexStr, replaceTemplate ):
+    def __init__( self, propertyName, regexStrTemplateList):
         """
         Creates a RevisionPropertyTransformer class.
 
         @type propertyName: string
         @param propertyName: Name of the property to transform.
-        @type regexStr: string
-        @param regexStr: The regular expression to match the value against.
-        @type replaceTemplate: string
-        @param replaceTemplate: The replacement string (may contain group references, e.g. \1).
+        @type regexStrTemplateList: list
+        @param regexStrTemplateList: List of tuples defining the strings to match and the regular expressions to match the values against. The replacement string (may contain group references, e.g. \1).
         """
         self.__property_name = propertyName
-        self.__pattern = re.compile(regexStr, re.M)
-        self.__replace_template = replaceTemplate
+        self.__pattern_replace = [ ( re.compile(regexStr, re.M), replaceTemplate ) \
+                for regexStr, replaceTemplate in regexStrTemplateList ]
 
     def transform( self, dump ):
         for node in dump.get_nodes_iter():
             value = node.get_property(self.__property_name)
             if value != None:
-                newvalue = self.__pattern.sub(self.__replace_template, value)
-                node.set_property( self.__property_name, newvalue )
+                # Process all regexes sequentially
+                for pattern, replace_template in self.__pattern_replace:
+                    value = pattern.sub(replace_template, value)
+                node.set_property( self.__property_name, value )
 
 def svndump_transform_prop_cmdline( appname, args ):
     """
@@ -134,7 +134,7 @@ def svndump_transform_prop_cmdline( appname, args ):
         print "specify exactly one propname to transform, one regex to match the value against,\none replacement string, one source dump file and one destination dump file."
         return 1
 
-    copy_dump_file( args[3], args[4],  PropertyTransformer( args[0], args[1], args[2] ) )
+    copy_dump_file( args[3], args[4],  PropertyTransformer( args[0], [( args[1], args[2] )] ) )
     return 0
 
 
