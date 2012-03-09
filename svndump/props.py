@@ -88,7 +88,7 @@ class PropertyTransformer:
     A class for transforming the properties of a dump file class.
     """
 
-    def __init__( self, propertyName, regexStrTemplateList):
+    def __init__( self, propertyName, regexStrTemplateList, replaceTemplate=None):
         """
         Creates a RevisionPropertyTransformer class.
 
@@ -96,10 +96,17 @@ class PropertyTransformer:
         @param propertyName: Name of the property to transform.
         @type regexStrTemplateList: list
         @param regexStrTemplateList: List of tuples defining the strings to match and the regular expressions to match the values against. The replacement string (may contain group references, e.g. \1).
+        @type replaceTemplate: string
+        @param replateTempalte: The replacement string (may contain group references, e.g. \1). This parameter is provided for compatibility with the original svndumptool code base. If replaceTemplate is provided, then regexStrTemplateList should be a string as well, i.e., the regular expression to match the value against.
         """
         self.__property_name = propertyName
-        self.__pattern_replace = [ ( re.compile(regexStr, re.M), replaceTemplate ) \
-                for regexStr, replaceTemplate in regexStrTemplateList ]
+        if replaceTemplate is None:
+            self.__pattern_replace = [ ( re.compile(regexStr, re.M), replaceTemplate ) \
+                    for regexStr, replaceTemplate in regexStrTemplateList ]
+        else:
+            assert type('s') == type(regexStrTemplateList), 'Error, expected string as first argument!'
+            self.__pattern_replace = [ ( re.compile(regexStrTemplateList, re.M), replaceTemplate ) ]
+
 
     def transform( self, dump ):
         for node in dump.get_nodes_iter():
